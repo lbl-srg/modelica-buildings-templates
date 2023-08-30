@@ -1,0 +1,432 @@
+---
+sidebar_position: 1
+---
+
+# Guide
+
+## Interface Class
+
+### What Shall Be Declared?
+
+#### All outside connectors needed by any derived class
+
+:::danger Important
+
+All [outside connectors](https://specification.modelica.org/maint/3.5/connectors-and-connections.html#inside-and-outside-connectors) must be declared within the interface class&mdash;with the suitable conditional instance statements.
+
+(Each class extending an interface class shall not declare any outside connector&mdash;it may only conditionally remove inherited connectors.)
+:::
+
+This ensures the [plug-compatibility](https://specification.modelica.org/maint/3.5/interface-or-type-relationships.html#plug-compatibility-or-restricted-subtyping) of any derived class, and allows
+- at the template level: defining all possible connections inside a template class, whatever the redeclarations performed on its components,
+- at the simulation model level: having a fixed connectivity structure for each instantiated subsystem model, which allows to connect those instances together without any concern about the actual configuration of each subsystem.
+
+<details>
+
+*How does it comply with the [Modelica Language Specification](https://specification.modelica.org/maint/3.5/scoping-name-lookup-and-flattening.html#generation-of-the-flat-equation-system)?*
+
+Type compatibility:
+
+> Each reference is checked, whether it is a valid reference, e.g. the referenced object belongs to or is an instance, where all *existing conditional declaration expressions evaluate to true|false* or it is a constant in a package.
+
+So checking that the redeclared component is a subtype of the constraining class is done with all the conditional connectors considered present (even if the redeclared component removes them).
+
+*How does it differ from interface classes in MBL?*
+
+Interface classes are usually implemented with the minimum set of connectors (and other variables) and derived classes extend that set (which ensures type compatibility).
+See for instance `Buildings.Fluid.Boilers.BaseClasses.PartialBoiler`:
+
+```mo
+// Buildings.Fluid.Boilers.BaseClasses.PartialBoiler
+  extends Interfaces.TwoPortHeatMassExchanger(...); // Interface class used by the model
+
+  Modelica.Blocks.Interfaces.RealInput y(...)       // Additional connector not declared in the interface class
+    "Part load ratio";
+  Modelica.Blocks.Interfaces.RealOutput T(...)      // Additional connector not declared in the interface class
+    "Temperature of the fluid";
+  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort  // Additional connector not declared in the interface class
+    "Heat port, can be used to connect to ambient";
+```
+</details>
+
+#### Configuration parameters and system tags
+
+To be updated.
+
+
+#### Both the [parameter record](#parameter-record) *and* locally accessible design parameters
+
+The parameter record is for propagation across the instance tree.
+
+The local design parameter declarations ensure that we have a standard set of parameters available in each template or component, whatever the configuration. For instance an evaporator coil still has `mChiWat_flow_nominal` defined with a final assignment to `0`.
+Most of the local design parameters will have final assignments to the parameters from the record.
+
+<details>
+<summary>Example</summary>
+
+```mo
+// Interface class Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler
+
+final parameter Modelica.Units.SI.MassFlowRate mAirSup_flow_nominal=
+  dat.mAirSup_flow_nominal
+  "Supply air mass flow rate"
+  annotation (Dialog(group="Nominal condition"));
+final parameter Modelica.Units.SI.MassFlowRate mAirRet_flow_nominal=
+  dat.mAirRet_flow_nominal
+  "Return air mass flow rate"
+  annotation (Dialog(group="Nominal condition"));
+parameter Modelica.Units.SI.MassFlowRate mChiWat_flow_nominal
+  "Total CHW mass flow rate"
+  annotation (Dialog(group="Nominal condition"));
+parameter Modelica.Units.SI.MassFlowRate mHeaWat_flow_nominal
+  "Total HHW mass flow rate"
+  annotation (Dialog(group="Nominal condition"));
+parameter Modelica.Units.SI.HeatFlowRate QChiWat_flow_nominal
+  "Total CHW heat flow rate"
+  annotation (Dialog(group="Nominal condition"));
+parameter Modelica.Units.SI.HeatFlowRate QHeaWat_flow_nominal
+  "Total HHW heat flow rate"
+  annotation (Dialog(group="Nominal condition"));
+
+// Derived class Buildings.Templates.AirHandlersFans.VAVMultiZone
+
+extends Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler(
+  ...
+  final mChiWat_flow_nominal=if coiCoo.have_sou then dat.coiCoo.mWat_flow_nominal else 0,
+  final mHeaWat_flow_nominal=(if coiHeaPre.have_sou then dat.coiHeaPre.mWat_flow_nominal else 0) +
+    (if coiHeaReh.have_sou then dat.coiHeaReh.mWat_flow_nominal else 0),
+  final QChiWat_flow_nominal=if coiCoo.have_sou then dat.coiCoo.Q_flow_nominal else 0,
+  final QHeaWat_flow_nominal=(if coiHeaPre.have_sou then dat.coiHeaPre.Q_flow_nominal else 0) +
+    (if coiHeaReh.have_sou then dat.coiHeaReh.Q_flow_nominal else 0));
+```
+</details>
+
+## Replaceable Component
+
+No `choicesAllMatching` annotation is currently allowed in the `Templates` package (to maximize support across various Modelica tools).
+Expand into an explicit `choices` annotation with proper description strings and the following rules.
+- Use `redeclare replaceable` to allow
+  - further redeclaration by the user,
+  - visiting the parameter dialog box of the redeclared component (this is Dymola's behavior, although if the redeclared component contains replaceable components that behavior is enabled automatically).
+
+
+## Section
+
+A so-called section is needed anytime there is a hard constraint on the allowable choices for two replaceable components that are at the same level of composition.
+
+<details>
+<summary>Example</summary>
+
+In the case of a multiple-zone VAV with an air economizer, a return fan should require a modulating relief damper. However, we cannot bind the redeclaration of the damper component to the redeclaration of the return fan component. So we introduce a section `Templates.AirHandlersFans.Components.ReliefReturnSection` that contains the two components, so that the whole section component can be redeclared with the proper inside fan and damper components.
+</details>
+
+The interface class for a section should use the same class for the control bus as the one used by the system template.
+This differs from the basic components which have a dedicated class for the control bus `Buildings.Templates.Components.Interfaces.Bus`.
+The motivation is to avoid nesting expandable connectors and to enable traversing seamlessly the composition levels when connecting signal variables.
+
+```mo
+// Buildings.Templates.AirHandlersFans.VAVMultiZone
+connect(secOutRel.bus, bus);            // secOutRel is a section
+connect(ctl.bus, bus);                  // ctl is a controller
+
+// Buildings.Templates.AirHandlersFans.Components.OutdoorReliefReturnSection
+connect(damRet.bus, bus.damRet);        // connection to the damper bus inside the section
+
+// Buildings.Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone
+connect(ctl.yRetDamPos, bus.damRet.y);  // accessing the damper control variable inside the controller
+```
+
+## Controller Integration
+
+To be updated.
+
+- Specify hysteresis and timer use in CDL blocks
+- Specify how equipment status should be computed, and the resulting constraints on CDL implementation of SOO (use of `pre`)
+
+
+### Control Section
+
+We instantiate all control blocks that form the control sequence of a system into one single class that is similar to a [section](#section), see for instance [`Buildings.Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone`](https://github.com/lbl-srg/modelica-buildings/blob/8b0d03018b18928fc9a08367e4d330e3eb711941/Buildings/Templates/AirHandlersFans/Components/Controls/G36VAVMultiZone.mo).
+
+Particularly this control section uses the same class for the control bus as the one used by the system template.
+
+To be updated.
+
+- What parameters shall be declared?
+
+
+### Control Point Connections
+
+To be updated.
+
+
+## Parameter Record
+
+All design and operating parameters are declared within a Modelica record class. This record is used to
+
+- assign design and operating parameter values for all subcomponents,
+- support parameter propagation from a top-level, whole HVAC system parameter record,
+- populate the [equipment schedule in the UI](https://docs.google.com/document/d/16Z8HqTi3vNV3HUaa4ijBPVSQvA4MyGTu8bxoGTBD2YI/edit?usp=sharing).
+
+### Implementation Rules
+
+###### Use only one nesting level
+
+If needed, component records must extend (not instantiate) subcomponent records.
+For instance in `Buildings.Templates.Components.Coils.Interfaces.Data`:
+
+- the class cannot extend `Buildings.Templates.Components.Valves.Interfaces.Data` because of the colliding  declarations of `typ`,
+- so `dpValve_nominal` is declared locally and a protected record with the type `Buildings.Templates.Components.Valves.Interfaces.Data` is constructed to pass in parameters to the valve component.
+
+###### Configuration parameters must be set through the component model, not through the record
+
+- Structural parameters are assigned ***from*** the component model ***to*** the record, and propagated ***up*** the instance tree.
+- Design and operating parameters are assigned ***from*** the record ***to*** the component model, and propagated ***down*** the instance tree.
+
+The record for the [controller section](#control-section) needs to be instantiated (not extended) in the master record because it requires many structural parameters (such as `typFanSup`) that have duplicates in the master record.
+
+
+At the component level, we instantiate the component record and bind (`final`) local parameters to the record elements, as in `Buildings.Fluid.Chillers.ElectricEIR` (as opposed to extending the record to integrate the parameter definitions as `Buildings.Fluid.Actuators.BaseClasses.ValveParameters`).
+This allows simpler propagation (only the record is passed in) which is agnostic from the parameter structure of the constraining class (for instance `mWat_flow_nominal` is not defined in `Buildings.Templates.Components.Coils.Interfaces.PartialCoil`).
+
+###### Do not use final bindings for configuration parameters
+
+Use `annotation(Dialog(enable=false))` instead.
+
+This is a temporary workaround for what seems to be a bug in Dymola (SRF00860858) and to allow propagating from a top-level (whole building) record as in `Buildings.Templates.AirHandlersFans.Validation.VAVMZNoEconomizer`.
+
+
+<details>
+<summary>About outer references</summary>
+
+Top-level models with outer references should be supported but the valid `outer replaceable` component declaration clause differs between OCT and Dymola, see [`issue1374_templates_record_outer`](https://github.com/AntoineGautier/modelica-buildings/blob/issue1374_templates_record_outer/Buildings/Templates/AirHandlersFans/Validation/UserProject/DataTopLevelDymola.mo).
+
+At the AHU template level, switching to outer references (and using a model instead of a record&mdash;as [elements of a record shall not have `inner` nor `outer` prefixes](https://specification.modelica.org/maint/3.5/class-predefined-types-and-declarations.html#specialized-classes)) would avoid painful propagation of configuration parameters `typ*`. However, this will not support propagation from a top level (whole building) record then.
+</details>
+
+
+### Exposed Parameters
+
+To be updated.
+
+### Feature Enhancement
+
+Implement a subrecord with configuration (structural) parameters—intantiated as `cfg`.
+
+That subrecord must be declared in the master record `dat` ***and*** in the components so that
+
+- structural parameters be propagated *up* with `dat(cfg=component.cfg)` instead of
+  ```mo
+  UserProject.Data.AllSystems dat(VAV_1(
+    final typ=VAV_1.typ,
+    final typFanSup=VAV_1.typFanSup,
+    final typFanRet=VAV_1.typFanRet,
+    final typFanRel=VAV_1.typFanRel,
+    final have_souChiWat=VAV_1.have_souChiWat,
+    final have_souHeaWat=VAV_1.have_souHeaWat,
+    final typCoiHeaPre=VAV_1.coiHeaPre.typ,
+    final typCoiCoo=VAV_1.coiCoo.typ,
+    final typCoiHeaReh=VAV_1.coiHeaReh.typ,
+    final typValCoiHeaPre=VAV_1.coiHeaPre.typVal,
+    final typValCoiCoo=VAV_1.coiCoo.typVal,
+    final typValCoiHeaReh=VAV_1.coiHeaReh.typVal,
+    final typDamOut=VAV_1.secOutRel.typDamOut,
+    final typDamOutMin=VAV_1.secOutRel.typDamOutMin,
+    final typDamRet=VAV_1.secOutRel.typDamRet,
+    final typDamRel=VAV_1.secOutRel.typDamRel,
+    final typCtl=VAV_1.ctl.typ,
+    final typSecRel=VAV_1.secOutRel.typSecRel,
+    final typSecOut=VAV_1.ctl.typSecOut,
+    final buiPreCon=VAV_1.ctl.buiPreCon,
+    ctl(
+      stdEne=VAV_1.ctl.stdEne,
+      stdVen=VAV_1.ctl.stdVen,
+      have_CO2Sen=VAV_1.ctl.have_CO2Sen)))
+  ```
+- design parameters be propagated *down* with `component(dat=dat)`,
+- without any circular dependency.
+
+
+## System Schematics
+
+Refer to the [specification for the generation of engineering schematics](https://lbl-srg.github.io/ctrl-flow/requirements.html#engineering-schematic) if needed.
+
+### Component Icons
+
+:::caution Modelica tool support
+
+Currently the SVG graphics integrated using class annotations such as `Icon(graphics={Bitmap(fileName=<svg-file-path>, visible=<boolean-expression>))` are
+- not supported by Modelon Impact: ticket open at Modelon#2022042039000931 on the roadmap for the 2023.1 release,
+- not fully supported by OMEdit: most likely due to `<boolean-expression>` not being evaluated at UI runtime,
+- entirely supported by Dymola `>=2022.x`.
+:::
+
+The master SVG document containing all raw icons provided by Taylor Engineering and used in [ASHRAE (2021)](/docs/more/references#Ashrae21) is currently located at [`Buildings/Resources/Images/Templates/Icons.svg`](https://github.com/lbl-srg/modelica-buildings/blob/master/Buildings/Resources/Images/Templates/Icons.svg).
+
+Those raw icons must be processed as described below for Inkscape `>=1.1` before being used in the icon layers of Modelica classes.
+
+<details>
+The requirements below stem from the following observations.
+
+- The [Modelica Language Specification](https://specification.modelica.org/maint/3.5/annotations.html#common-definitions) specifies `type DrawingUnit = Real(final unit="mm")`.
+- The default icon layer size in Dymola is *200x200*&nbsp;mm (`{{-100,-100},{100,100}}`). This corresponds to *10x10*&nbsp;cells in the icon view. So one cell corresponds to *20x20*&nbsp;mm.
+- When instantiated, a component has its icon scaled by a factor *1/10* in the diagram layer. For instance, a `Line` object with `thickness=5` in the icon layer is rendered as a `Line` object with `thickness=0.5` in the diagram layer.
+- When `thickness < 0.25`, the stroke width remains unchanged in Dymola: so *0.2* and *0.1* yield the same stroke width.
+- It seems that Dymola handles Bitmap objects as squares, i.e., the objects are scaled by the minimum of the x and y dimensions. Having external SVG files with equal height and width makes it easier to position and scale the graphical objects.
+
+</details>
+
+- Select object, copy to new file.
+- Change stroke color to black and stroke width to *1*&nbsp;mm.
+- Account for *20*&nbsp;mm for each grid cell in Dymola icon layer.
+  - So the default icon layer size of *10x10*&nbsp;cells in Dymola corresponds to a page size of *200x200*&nbsp;mm in Inkscape.
+- For most of the AHU components, lock width/height ratio and change height to *200*&nbsp;mm.
+  - For transducers, *200*&nbsp;mm is for the probe, *80*&nbsp;mm is for the sensor casing.
+- For polygons, the different segments will typically not be connected together (gap at each corner), so select each segment with `Node` tool and use `Node` functionalities to
+  - `Convert selected objects to path`
+  - `Join selected nodes`
+  - For the last corner use `Path/Union`
+- Text should be in sans-serif with font size of *120*.
+  - If needed (typically in case of specific text orientation), select text object and transform to path with `Path/Object to Path`.
+- Specify the page size with equal height and width (typically *200x200*&nbsp;mm) and center icons in the page.
+- Save as Inkscape SVG.
+
+
+### Graphical Primitives
+
+In addition to external SVG files, the schematics may use Modelica graphical primitives with the following conventions.
+
+ | Equipment                                                         | Primitive            | Icon layer                         | Diagram layer                     |
+ | ----------------------------------------------------------------- | -------------------- | ---------------------------------- | --------------------------------- |
+ | Supply pipe (*)                                                   | Line, solid          | Thickness 0.5                      | Thickness 5                       |
+ | Return pipe (*)                                                   | Line, dashed         | Thickness 0.5                      | Thickness 5                       |
+ | Duct wall                                                         | Line, solid          | Default thickness (0.25)           | Default thickness (0.25)          |
+ | Capillary tube (pressure sensor)                                  | Polygon or rectangle | Default thickness (0.25), width 10 | Default thickness (0.25), width 1 |
+ | Motor shaft (actuator), connection between sensor and transmitter | Line, solid          | Default thickness (0.25)           | Default thickness (0.25)          |
+
+*(\*) This should be specified as a graphical annotation to the corresponding connect statement.*
+
+Graphical primitives that need to be pruned to generate the system schematic shall use the annotation `visible=viewDiagramAll` where `viewDiagramAll` is declared in the template interface class with:
+
+```mo
+inner parameter Boolean viewDiagramAll=false
+  "Set to true to view all component icons in diagram view"
+  annotation (Dialog(tab="Graphics"));
+```
+
+
+## Vendor Specific Annotations
+
+All vendor annotations are hierarchical annotations in the form of `"__ctrlFlow" class-modification`. Strict camel case formatting is used for any argument in the class modification. No simple annotation in the form of `"__ctrlFlow" "_" IDENT` is used.
+
+### Class Annotations
+
+#### `__ctrlFlow(template=true|false)`
+
+:::danger FIXME
+
+This is weird to use a hierarchical annotation here because `__ctrlFlow(template=false)` will never be used. Prefer `__ctrlFlow_template` which is also easier to test for?
+:::
+
+Ctrl-flow greps for this annotation and returns a list of files which are then treated as entry points to build the tree of system types. Both packages (corresponding to system types such as `Buildings.Templates.AirHandlersFans`) and template classes (such as `Buildings.Templates.AirHandlersFans.VAVMultiZone`) shall contain this annotation.
+
+So the file arborescence:
+
+```sh
+Buildings/Templates
+├── AirHandlersFans
+│   ├── ...
+│   ├── package.mo  # Contains __ctrlFlow_template=true|false
+│   └── VAVMultiZone.mo  # Contains __ctrlFlow_template=true|false
+├── Components
+│   └── ...
+├── Data
+│   ├── AllSystems.mo
+│   ├── package.mo
+│   └── ...
+├── package.mo
+├── package.order
+├── Types.mo
+├── UsersGuide.mo
+└── ZoneEquipment
+    ├── ...
+    ├── package.mo  # Contains __ctrlFlow_template=true|false
+    ├── VAVBoxCoolingOnly.mo  # Contains __ctrlFlow_template=true|false
+    └── VAVBoxReheat.mo  # Contains __ctrlFlow_template=true|false
+```
+
+yields the following UI objects:
+
+![control](/img/list_systems_ui.png)
+
+
+:::caution Currently patched
+
+Currently (as of MBL commit `88b6ccdd08`) this annotation is not included in the Modelica classes but rather patched when preprocessing the Templates package to serve ctrl-flow app.
+The necessary refactoring is tracked at [#357](https://github.com/lbl-srg/ctrl-flow-dev/issues/357).
+
+:::
+
+<details>
+
+Alternative approach discussed with DEPT but not implemented.
+
+> We should rather use a flag indicating that a package (in our case `Buildings.Templates`) is to be considered as the "root" for all template URIs, for instance: `__ctrlFlow(routing="root")`. And for each template class (for instance `Buildings.Templates.AirHandlersFans.VAVMultiZone`): `__ctrlFlow(routing="template")`. The contract for the template developer will then be that the class URI dictates the explorer tree structure, starting from the "root" package (necessarily unique inside a library). So for instance the template `Buildings.Templates.AirHandlersFans.VAVMultiZone` with the above annotation would yield the following tree structure.
+> ```sh
+> AirHandlersFans
+> └── VAVMultiZone
+> ```
+> Without having to add any annotation to the subpackage `Buildings.Templates.AirHandlersFans`. So we would implicitly consider each folder between `routing="template"` and `routing="root"` to be a template category (like "Air Handlers and Fans").
+
+</details>
+
+### Declaration Annotations
+
+
+#### `__ctrlFlow(enable=true|false)`
+
+Each declaration or extends statement may have a hierarchical vendor-specific annotation `"__Linkage" "(" "enable" "=" logical-expression ")"` that allows disabling input fields in ctrl-flow configuration dialog. This is similar to Modelica annotation `Dialog(enable=true|false)` but provides additional flexibility and allows disabling all parameter input fields that are brought in by an extends statement. It takes precedence on the standard annotation `Dialog(enable)`.
+Typical use cases include classes from the Modelica Buildings Library that contain definitions of detailed simulation parameters and that are extended to define template components, or package classes used to specify the fluid properties.
+
+<details>
+
+<summary>Boolean litteral or expression?</summary>
+
+Although only Boolean literals are used in the templates as of commit 675801b669, the expression evaluation engine is invoked when parsing `__ctrlFlow(enable...)`, see https://github.com/lbl-srg/ctrl-flow-dev/blob/main/server/src/parser/parser.ts#L296-L317. So in practice, Boolean expressions could be used.
+
+</details>
+
+## Code Base
+
+### Git Workflow
+
+The main feature branch for template development is [`issue1374_templates`](https://github.com/lbl-srg/modelica-buildings/tree/issue1374_templates) that currently depends on&mdash;and is periodically kept in sync with
+
+- MBL `master`
+- MBL [`issue1913_g36_final`](https://github.com/lbl-srg/modelica-buildings/tree/issue1913_g36_final)
+
+Each new development should
+- start by branching out from the main feature branch&mdash;so the new branch is a dependent of the main feature branch,
+- be kept in sync with MBL master ***by merging the main feature branch***, as opposed to merging MBL master directly.
+
+
+### Code Tags
+
+Use the code tags from [PEP 350](https://peps.python.org/pep-0350/#mnemonics) to reference issues and feature enhancements directly in the Modelica code base. All tags should include one of the tag names below in all caps, followed by the name, e-mail address, or other identifier of the person with the best context about the problem, and the GH issue number if available.
+We keep it simple and only use:
+
+- `BUG` for what prevents from translating or simulating a model: ***should prevent merging***
+- `FIXME` for any problematic code not suitable for production: ***should prevent merging***, include [PEP 350](https://peps.python.org/pep-0350/#mnemonics) `TODO` under that code tag
+- `HACK` mainly for workarounds related to Modelica tools' limitations: reference the ticket number from the Modelica tool provider if available
+- `RFE` for a clearly identified development need (as opposed to an idea)
+
+For example:
+```mo
+// FIXME(AntoineGautier #1913): Should be conditional, depending on have_fanRel.
+```
+
+So we can collect all code tags with:
+
+```sh
+grep -nER '(^|/(\*|/)|<!--|")\s*(BUG|FIXME|HACK|RFE)' Buildings/Templates/.
+```

@@ -1,0 +1,27 @@
+---
+sidebar_position: 3
+---
+
+# References
+
+## Published
+
+<a id="Ashrae21"></a>
+
+ASHRAE (2021). Guideline 36 &ndash; High-performance sequences of operation for HVAC systems. ASHRAE.
+
+<a id="Gautier23"></a>
+
+[Gautier, A., Wetter, M., Hu, J., & Tummescheit, H. (In press). HVAC and control templates for the Modelica Buildings library. *Proceedings of the 15th International Modelica Conference*.](/pdf/2023_modelica_templates.pdf)
+
+<a id="Modelica21"></a>
+
+Modelica Association (2021). Modelica &ndash; A unified object-oriented language for systems modeling &ndash; Language specification (Version 3.5). https://specification.modelica.org/maint/3.5/MLS.html
+
+## Internal Resources
+
+[Specification of the Modelica Export](https://docs.google.com/document/d/11U0WLoYjK5e1qSmSc87V1GTrteD40b7__k1ulSDa7kk/edit?usp=sharing)
+
+[Specification of the Equipment Schedule](https://docs.google.com/document/d/16Z8HqTi3vNV3HUaa4ijBPVSQvA4MyGTu8bxoGTBD2YI/edit?usp=sharing)
+
+[Specification of Parameter Dialogs](https://docs.google.com/document/d/1eFkCcZLmoi3Pkj9no54RaoPtwLqClGfx7cp7g8ORnZQ/edit?usp=sharing)
