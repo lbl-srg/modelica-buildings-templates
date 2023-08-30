@@ -27,6 +27,7 @@ Fan and pump models
 
 
 <details>
+
 ***Still need to clarify*** the use of `u` and `y` in MBL.
 
 - Is it in reference to the control system (as I/O points) or in reference to the modeled component (either the process—for a sensor—or the controls)?

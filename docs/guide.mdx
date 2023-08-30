@@ -62,6 +62,7 @@ The local design parameter declarations ensure that we have a standard set of pa
 Most of the local design parameters will have final assignments to the parameters from the record.
 
 <details>
+
 <summary>Example</summary>
 
 ```mo
@@ -99,6 +100,7 @@ extends Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler(
   final QHeaWat_flow_nominal=(if coiHeaPre.have_sou then dat.coiHeaPre.Q_flow_nominal else 0) +
     (if coiHeaReh.have_sou then dat.coiHeaReh.Q_flow_nominal else 0));
 ```
+
 </details>
 
 ## Replaceable Component
@@ -115,6 +117,7 @@ Expand into an explicit `choices` annotation with proper description strings and
 A so-called section is needed anytime there is a hard constraint on the allowable choices for two replaceable components that are at the same level of composition.
 
 <details>
+
 <summary>Example</summary>
 
 In the case of a multiple-zone VAV with an air economizer, a return fan should require a modulating relief damper. However, we cannot bind the redeclaration of the damper component to the redeclaration of the return fan component. So we introduce a section `Templates.AirHandlersFans.Components.ReliefReturnSection` that contains the two components, so that the whole section component can be redeclared with the proper inside fan and damper components.
@@ -197,6 +200,7 @@ This is a temporary workaround for what seems to be a bug in Dymola (SRF00860858
 
 
 <details>
+
 <summary>About outer references</summary>
 
 Top-level models with outer references should be supported but the valid `outer replaceable` component declaration clause differs between OCT and Dymola, see [`issue1374_templates_record_outer`](https://github.com/AntoineGautier/modelica-buildings/blob/issue1374_templates_record_outer/Buildings/Templates/AirHandlersFans/Validation/UserProject/DataTopLevelDymola.mo).
@@ -261,11 +265,12 @@ Currently the SVG graphics integrated using class annotations such as `Icon(grap
 - entirely supported by Dymola `>=2022.x`.
 :::
 
-The master SVG document containing all raw icons provided by Taylor Engineering and used in [ASHRAE (2021)](/docs/more/references#Ashrae21) is currently located at [`Buildings/Resources/Images/Templates/Icons.svg`](https://github.com/lbl-srg/modelica-buildings/blob/master/Buildings/Resources/Images/Templates/Icons.svg).
+The master SVG document containing all raw icons provided by Taylor Engineering and used in [ASHRAE (2021)](/more/references#Ashrae21) is currently located at [`Buildings/Resources/Images/Templates/Icons.svg`](https://github.com/lbl-srg/modelica-buildings/blob/master/Buildings/Resources/Images/Templates/Icons.svg).
 
 Those raw icons must be processed as described below for Inkscape `>=1.1` before being used in the icon layers of Modelica classes.
 
 <details>
+
 The requirements below stem from the following observations.
 
 - The [Modelica Language Specification](https://specification.modelica.org/maint/3.5/annotations.html#common-definitions) specifies `type DrawingUnit = Real(final unit="mm")`.
