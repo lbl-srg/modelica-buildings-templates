@@ -10,9 +10,9 @@ sidebar_position: 3
 
 ASHRAE (2021). Guideline 36 &ndash; High-performance sequences of operation for HVAC systems. ASHRAE.
 
-<a id="Gautier23"></a>
+<!-- <a id="Gautier23"></a>
 
-[Gautier, A., Wetter, M., Hu, J., & Tummescheit, H. (In press). HVAC and control templates for the Modelica Buildings library. *Proceedings of the 15th International Modelica Conference*.](/pdf/2023_modelica_templates.pdf)
+[Gautier, A., Wetter, M., Hu, J., & Tummescheit, H. (In press). HVAC and control templates for the Modelica Buildings library. *Proceedings of the 15th International Modelica Conference*.](/pdf/2023_modelica_templates.pdf) -->
 
 <a id="Modelica21"></a>
 
