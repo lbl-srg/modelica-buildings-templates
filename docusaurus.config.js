@@ -50,6 +50,10 @@ const config = {
     locales: ['en'],
   },
 
+  plugins: [[ require.resolve('docusaurus-lunr-search'), {
+    indexBaseUrl: true, // Because docs is served at the site's root, see routeBasePath
+  }]],
+
   presets: [
     [
       'classic',
@@ -113,35 +117,7 @@ const config = {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
       },
-      algolia: {
-        // The application ID provided by Algolia
-        appId: 'CP1J3U27UZ',
 
-        // Public API key: it is safe to commit it
-        apiKey: '0f0ee03c5c6dc0b5b68a626873d79fbe',
-
-        indexName: 'template-dev-docs',
-
-        // Optional: see doc section below
-        contextualSearch: true,
-
-        // Optional: Specify domains where the navigation should occur through window.location instead on history.push. Useful when our Algolia config crawls multiple documentation sites and we want to navigate with window.location.href to them.
-        externalUrlRegex: 'external\\.com|domain\\.com',
-
-        // Optional: Replace parts of the item URLs from Algolia. Useful when using the same search index for multiple deployments using a different baseUrl. You can use regexp or string in the `from` param. For example: localhost:3000 vs myCompany.com/docs
-        // replaceSearchResultPathname: {
-        //   from: '/docs/', // or as RegExp: /\/docs\//
-        //   to: '/',
-        // },
-
-        // Optional: Algolia search parameters
-        searchParameters: {},
-
-        // Optional: path for search page that enabled by default (`false` to disable it)
-        searchPagePath: false,
-
-        //... other Algolia params
-      },
     }),
 };
 
