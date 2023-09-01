@@ -4,16 +4,38 @@ sidebar_position: 1
 
 # Glossary
 
+## Templating
+
+### System
+
+See [below](#component-system).
+
+### Configuration
+
+A system configuration corresponds to the specification of the type and layout of the equipment and the corresponding control logic. Systems with different capacities may have the same configuration, provided they have the same control software and hardware type.
+
+### Parameterization
+
+By parameterization we mean all possible class modifications, such as changing parameter values and redeclaring components or classes, which we refer to as class parameterization.
+
+### Structural and value parameters
+
+We use the term structural parameters if a parameter affects the number and structure of the equations, and value parameters if they do not. An example of a structural parameter is a parameter used to specify an array size.
+
+###  Template
+
+A template, or template class, is defined as a Modelica model that can be parameterized (as defined above) to represent a particular system configuration.
+
+
+## HVAC Systems
+
 ### Source, Load
 
 We adopt the definitions from [ASHRAE (2021)](./references#Ashrae21) Section 5.1.19.1.
 
-> A component is a “source” if it provides resources to a downstream component, such as a chiller providing chilled water (CHW) to an AHU.
->
-> A component is a “load” if it receives resources from an upstream component, such as an AHU that receives CHW from a chiller.
->
+> A component is a “source” if it provides resources to a downstream component, such as a chiller providing chilled water (CHW) to an AHU.<br />
+> A component is a “load” if it receives resources from an upstream component, such as an AHU that receives CHW from a chiller.<br />
 > The same component may be both a load (receiving resources from an upstream source) and a source (providing resources to a downstream load).
-
 
 ### Component, System
 

@@ -28,6 +28,9 @@ const config = {
   tagline: 'Modelica Template Development Guide',
   favicon: 'img/favicon.ico',
 
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'throw',
+
   // Set the production url of your site here
   url: 'https://antoinegautier.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
@@ -64,6 +67,8 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           remarkPlugins: [math],
           rehypePlugins: [katex],
+          showLastUpdateAuthor: true,
+          showLastUpdateTime: true,
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

@@ -4,7 +4,14 @@ sidebar_position: 2
 
 # Nomenclature
 
-This provides conventions mainly for variable naming, marginally for component naming.
+This section provides conventions mainly for variable naming, marginally for component naming.
+
+
+## Example of Control Point Naming
+
+By way of introduction, here is an example of how the following rules translate into practical nomenclature for the CHW plant template.
+
+<iframe src="https://docs.google.com/document/d/1LeutsY9__ClaIEjmvRHkIAMGX5dlW0Xo1BFGvJTHjs4/preview" frameborder="0" allowfullscreen width="100%" height="500"></iframe>
 
 
 ## Control Points
@@ -68,7 +75,7 @@ In the CamelCase instance name:
 
     Similarly (exhaustive list):
 
-    - `TOut` (air implied)
+    - `TOut` or `phiOut` (air implied)
     - `TZon` (air implied)
     - `pBui_rel` (air implied)
 
@@ -80,7 +87,7 @@ All CamelCase morphemes should be used before the first underscore&mdash;such as
 
 :::danger NO
 
-Three-letter capital abbreviations are only allowed&mdash;and encouraged&mdash;in documentation and description strings.
+3-letter capital abbreviations are only allowed&mdash;and encouraged&mdash;in documentation and description strings.
 
 :::
 
@@ -96,13 +103,13 @@ For variable and instance names:
 | Eco        | WSE        |
 | Hex        | HX         |
 | AirHan     | AHU        |
-| Tow        | CT         |
-| yLoa       | PLR        |
+| Coo        | CT         |
 
 Tolerated exceptions:
 
 - COP
 - VAV
+- PLR
 
 
 ## Fixed Position or Non-abbreviated Forms
@@ -112,6 +119,7 @@ Tolerated exceptions:
   <details>
 
   `min` and `max` are attributes of primitive types in Modelica, same as `nominal`, and should have the same notation, not Min and Max in CamelCase.
+
   </details>
 
 - For design conditions use `_nominal` not `Des`
@@ -157,11 +165,11 @@ For instance a sensor for supply air temperature should be named `TAirSup` inste
 
 ### Various
 
-`Set` for a set point, always as the last morpheme. So `TZonHeaOccSet` not `TZonHeaSetOcc`.
+`Set` for a set point, always as the last morpheme: so `TZonHeaOccSet` not `TZonHeaSetOcc`.
 
-The letter `n` is used to represent a number of something (as opposed to num).
+The letter `n` is used to represent a number of something (as opposed to `num`).
 
-The letter `y` is used  to represent a fractional quantity (speed, opening, load) taking 1 as maximum value, for instance `yLoa` for PLR.
+The letter `y` is used to represent a fractional quantity (speed, opening, load) taking $1$ as maximum value, for instance `yLoa` for PLR.
 
 :::tip
 
@@ -170,6 +178,7 @@ The letter `y` is used  to represent a fractional quantity (speed, opening, load
   - Prefer `cfg` to `con` for a configuration.
 
   - Prefer `lck` to `loc` for lock-out as the latter is too loose: local, etc.
+
 :::
 
 

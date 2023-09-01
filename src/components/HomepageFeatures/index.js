@@ -15,7 +15,7 @@ const FeatureList = [
     title: 'Version',
     description: (
       <>
-        0.x (draft)
+        1.0 (first release)
       </>
     ),
   }
