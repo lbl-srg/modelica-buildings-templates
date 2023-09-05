@@ -49,9 +49,12 @@ Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort  // Additional conn
 
 ### Both the [Parameter Record](#parameter-record) and Locally Accessible Design Parameters
 
-The parameter record is for propagation across the instance tree.
+The parameter record is for propagation of design and operating parameters across the instance tree.
 
-The local design parameter declarations ensure that we have a standard set of parameters available in each template or component, whatever the configuration. For instance an evaporator coil still has `mChiWat_flow_nominal` defined with a final assignment to `0`.
+The local design parameter declarations ensure that a standard set of parameters is available in any template or component, whatever the configuration.
+(For example, an evaporator coil still has `mChiWat_flow_nominal` defined with a final assignment to `0`.)
+This way, one can easily compute the sum of a quantity over a set of instances.
+(For example, the total CHW flow rate over all terminal units.)
 
 Most of the local design parameters have `final` assignments to the parameters from the record.
 
@@ -81,9 +84,10 @@ parameter Modelica.Units.SI.HeatFlowRate QHeaWat_flow_nominal
   "Total HHW heat flow rate"
   annotation (Dialog(group="Nominal condition"));
 ```
-And the derived class:
-```mo title="Templates/AirHandlersFans/VAVMultiZone.mo"
 
+And the derived class:
+
+```mo title="Templates/AirHandlersFans/VAVMultiZone.mo"
 extends Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler(
   ...
   final mChiWat_flow_nominal=if coiCoo.have_sou then dat.coiCoo.mWat_flow_nominal else 0,
@@ -97,10 +101,84 @@ extends Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler(
 </details>
 
 
-### Configuration Parameters
+### Both the [Configuration Record](#subrecord-with-configuration-parameters) and Locally Accessible Configuration Parameters {#configuration-record}
 
-All configuration parameters are declared in the interface class, see the [admonition below](#admonConfigParam) for the proposed structure.
+The configuration parameters are declared in the interface class, as is the configuration record `cfg` which "groups" them into a single object more suitable for propagation.
 
+This record instance is not needed directly within a template class, but rather serves to reduce the number of parameter bindings when using a top-level parameter record (for all HVAC systems) that must access the configuration parameters of each template instance.
+It can be considered as the "signature" for a given system configuration, accessible within any template.
+
+The instance `cfg` must be ultimately assigned the `final` keyword, as it should not be exposed to the user.
+Contrary to design and operating parameters, the configuration parameters are propagated (with `final`bindings) *from* the component model *to* the record instance.
+
+<details>
+
+<summary>Example</summary>
+
+```mo title="Templates/AirHandlersFans/Interfaces/PartialAirHandler.mo"
+replaceable parameter
+  Buildings.Templates.AirHandlersFans.Configuration.PartialAirHandler cfg(
+  final typ=typ,
+  final typFanSup=typFanSup,
+  final typFanRel=typFanRel,
+  final typFanRet=typFanRet,
+  final have_souChiWat=have_souChiWat,
+  final have_souHeaWat=have_souHeaWat)
+  "Configuration parameters";
+parameter Buildings.Templates.AirHandlersFans.Types.Configuration typ
+  "Type of system"
+  annotation (Evaluate=true, Dialog(group="Configuration"));
+parameter Boolean have_porRel=
+  typ==Buildings.Templates.AirHandlersFans.Types.Configuration.ExhaustOnly
+  "Set to true for relief (exhaust) fluid port"
+  annotation (Evaluate=true, Dialog(group="Configuration", enable=false));
+parameter Boolean have_souChiWat
+  "Set to true if system uses CHW"
+  annotation (Evaluate=true, Dialog(group="Configuration"));
+parameter Boolean have_souHeaWat
+  "Set to true if system uses HHW"
+  annotation (Evaluate=true, Dialog(group="Configuration"));
+inner parameter Buildings.Templates.Components.Types.Fan typFanSup
+  "Type of supply fan"
+  annotation (Evaluate=true, Dialog(group="Configuration"));
+inner parameter Buildings.Templates.Components.Types.Fan typFanRet
+  "Type of return fan"
+  annotation (Evaluate=true, Dialog(group="Configuration"));
+inner parameter Buildings.Templates.Components.Types.Fan typFanRel
+  "Type of relief fan"
+  annotation (Evaluate=true, Dialog(group="Configuration"));
+```
+
+And the derived class:
+
+```mo title="Templates/AirHandlersFans/VAVMultiZone.mo"
+extends Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler(
+  redeclare final Buildings.Templates.AirHandlersFans.Configuration.VAVMultiZone cfg(
+    final typCoiHeaPre=coiHeaPre.typ,
+    final typCoiCoo=coiCoo.typ,
+    final typCoiHeaReh=coiHeaReh.typ,
+    final typValCoiHeaPre=coiHeaPre.typVal,
+    final typValCoiCoo=coiCoo.typVal,
+    final typValCoiHeaReh=coiHeaReh.typVal,
+    final typDamOut=secOutRel.typDamOut,
+    final typDamOutMin=secOutRel.typDamOutMin,
+    final typDamRet=secOutRel.typDamRet,
+    final typDamRel=secOutRel.typDamRel,
+    final typSecOut=secOutRel.typSecOut,
+    final typCtl=ctl.typ,
+    final buiPreCon=ctl.buiPreCon,
+    final stdVen=ctl.stdVen), ...);
+```
+
+So that the top-level parameter record can access all configuration parameters of a VAV instance with a single binding as follows.
+
+```mo title="Templates/AirHandlersFans/Validation/UserProject/Data/AllSystems.mo"
+outer VAV VAV_1
+  "Instance of MZVAV model";
+parameter Buildings.Templates.AirHandlersFans.Data.VAVMultiZone dat_VAV_1(
+  final cfg=VAV_1.cfg, ...);
+```
+</details>
 
 ### Nested Expandable Connectors
 
@@ -236,24 +314,39 @@ All design and operating parameters are declared within a Modelica record class.
 
 ### Implementation Rules
 
-#### Use Only One Nesting Level
+#### Subrecord with Configuration Parameters
 
-If needed, component records must extend (not instantiate) subcomponent records.
-For instance in `Templates.Components.Coils.Interfaces.Data`:
+Within the parameter record, all configuration parameters are (only) accessible via an instance of the configuration record `cfg`.
+This instance uses the annotation `annotation (Dialog(enable=false))` as it should not be exposed to the user&mdash;and record classes do not allow for protected elements, and this instance cannot be `final` as it is overridden.
 
-- the class cannot extend `Templates.Components.Valves.Interfaces.Data` because of the colliding declarations of `typ`,
-- so `dpValve_nominal` is declared locally and a protected record with the type `Templates.Components.Valves.Interfaces.Data` is constructed to pass in parameters to the valve component.
+:::note
 
-#### Configuration Parameters Must Be Set Through the Component Model, Not Through the Record
+The final override is debatable and the bindings of record instances containing final parameter assignments appear to be under-specified.
+As a result, the behavior varies across Modelica tools. And even for a given tool, it varies with the constructs being used (such as inheritance or direct definition).
+Dymola sometimes (see SRF00860858) triggers a "final overriding" error when a record instance contains final bindings and the record itself is propagated from a higher composition level.
+OCT never yields a warning.
+:::
+
+When instantiated within the interface class, the parameter record uses a binding with the [local instance of the configuration record](#configuration-record), i.e., `dat(cfg=cfg)`.
+Here again, because this binding will be overridden when propagated `dat` from a top-level whole-building record, the `final` keyword must not be used in this binding.
+
+:::caution Currently Under Development
+
+Currently, all configuration parameters are included in the master record with a flat structure.
+Through issue [#3500](https://github.com/lbl-srg/modelica-buildings/issues/3500) a subrecord `cfg` will be introduced and include all configuration parameters.
+Ongoing template developments should adopt the same construct with a subrecord `cfg` for configuration parameters.
+:::
+
+#### Parameter Propagation
 
 Parameter propagation is implemented as follows.
 
-- Structural (configuration) parameters are assigned ***from*** the component model ***to*** the record, and propagated ***up*** the instance tree.
+- Configuration parameters are assigned ***from*** the component model ***to*** the record, and propagated ***up*** the instance tree.
 - Design and operating parameters are assigned ***from*** the record ***to*** the component model, and propagated ***down*** the instance tree.
 
-The record for the [controller section](#control-section) needs to be instantiated (not extended) in the master record because it requires many structural parameters (such as `typFanSup`) that have duplicates in the master record.
+The record for the [controller section](#control-section) needs to be instantiated (not extended) in the master record because it requires many configuration parameters (such as `typFanSup`) that have duplicates in the master record.
 
-At the component level, we instantiate the component record and bind (`final`) local parameters to the record elements.
+At the component level, we instantiate the parameter record as `dat` and bind (with `final`) local design and operating parameters to the record elements.
 
 <details>
 
@@ -265,36 +358,13 @@ However, other classes such as `Fluid.Actuators.BaseClasses.PartialTwoWayValve` 
 
 This allows simpler propagation (only the record is passed in) which is agnostic from the parameter structure of the constraining class (for instance `mWat_flow_nominal` is not defined in `Templates.Components.Coils.Interfaces.PartialCoil`).
 
-<a id="admonConfigParam"></a>
+#### Use Only One Nesting Level
 
-:::caution Subrecord with Configuration Parameters
+If needed, component records must extend (not instantiate) subcomponent records.
+For instance in `Templates.Components.Coils.Interfaces.Data`:
 
-Currently, all configuration parameters are included in the master record with a flat structure. This makes binding or propagating these parameters impractical, as shown below.
-
-```mo title="Templates/AirHandlersFans/Validation/UserProject/Data/AllSystems.mo"
-parameter Buildings.Templates.AirHandlersFans.Data.VAVMultiZone dat_VAV_1(
-  final typ=VAV_1.typ,
-  final typFanSup=VAV_1.typFanSup,
-  final typFanRet=VAV_1.typFanRet,
-  final typFanRel=VAV_1.typFanRel,
-  ...
-  final typCtl=VAV_1.ctl.typ,
-  final typSecOut=VAV_1.ctl.typSecOut,
-  final buiPreCon=VAV_1.ctl.buiPreCon,
-  final stdVen=VAV_1.ctl.stdVen, ...
-```
-
-Through issue [#3500](https://github.com/lbl-srg/modelica-buildings/issues/3500) a subrecord `cfg` will be introduced and include all configuration parameters.
-This subrecord can be considered as the "signature" for a given system configuration, accessible from any component and any template.
-
-Ongoing template developments should adopt the same construct with a subrecord `cfg` for configuration parameters.
-:::
-
-#### Do Not Use Final Bindings for Configuration Parameters
-
-This is because some Modelica tools (Dymola sometimes see SRF00860858, OCT never) trigger a "final overriding" error when a record instance contains final bindings and the record itself is propagated from a higher composition level.
-
-Use `annotation(Dialog(enable=false))` instead when declaring the parameters (configuration parameters are for development use only and should not be exposed to the user).
+- the class cannot extend `Templates.Components.Valves.Interfaces.Data` because of the colliding declarations of `typ`,
+- so `dpValve_nominal` is declared locally and a protected record with the type `Templates.Components.Valves.Interfaces.Data` is constructed to pass in parameters to the valve component.
 
 
 ### Exposed Parameters
