@@ -57,7 +57,7 @@ See also [Enable](#enable).
 
 ### Enable
 
-For VFDs, Enable is a special contact on the VFD panel typically hardwired to a relay logic for safety (see [ASHRAE (2021)](./references#Ashrae21) Figure A-9 for instance). This is not the same as the DO point that actually starts the equipment (On/Off command or Start signal) which is wired to VFD Run contact.
+For VFDs, Enable is a special contact on the VFD panel typically hardwired to a relay logic for safety (see [ASHRAE (2021)](./references#Ashrae21) Figure&nbsp;A-9 for example). This is not the same as the DO point that actually starts the equipment (On/Off command or Start signal) which is wired to VFD Run contact.
 
 Enable is used differently for an equipment with built-in control (e.g. chiller or boiler) where the On/Off command is wired to the Enable contact on the control panel (see [ASHRAE (2021)](./references#Ashrae21) Section 4.11.1). There is no Run contact in that case: Enable is used in lieu of Run.
 

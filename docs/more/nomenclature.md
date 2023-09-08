@@ -50,7 +50,7 @@ In the CamelCase instance name:
 
 - The first morpheme indicates what the instance represents.
 
-  For instance a controller `ctl`, a fan `fan`, a coil `coi`
+  For example, a controller `ctl`, a fan `fan`, a coil `coi`
 
   <details>
 
@@ -64,14 +64,14 @@ In the CamelCase instance name:
 
 - The suffixes stand for the attributes by order of importance.
 
-  For instance `coiCoo` for cooling coil, `fanSupDra` for a supply fan in a draw-through configuration.
+  For example, `coiCoo` for cooling coil, `fanSupDra` for a supply fan in a draw-through configuration.
 
   For a quantity
 
   - the first suffix shall systematically describe the medium (`ChiWat`, `Air`, etc.),
   - the second suffix shall describe the origin of the medium (`ChiWatSup`, `TAirSup`, etc.).
 
-    Exceptions are only allowed if the quantity is a system characteristic for which there is no ambiguity, for instance `dpDamOut_nominal` for the OA damper pressure drop (we don’t mention air) or `dpValCoiCoo` for the cooling coil control valve (we don’t mention CHW).
+    Exceptions are only allowed if the quantity is a system characteristic for which there is no ambiguity, e.g., `dpDamOut_nominal` for the OA damper pressure drop (we don’t mention air) or `dpValCoiCoo` for the cooling coil control valve (we don’t mention CHW).
 
     Similarly (exhaustive list):
 
@@ -149,7 +149,7 @@ Pressure:
 
 Relative humidity: `phi`
 
-From [Buildings.UsersGuide.Conventions](https://simulationresearch.lbl.gov/modelica/releases/v8.1.0/help/Buildings_UsersGuide.html#Buildings.UsersGuide.Conventions):
+From [Buildings.UsersGuide.Conventions](https://simulationresearch.lbl.gov/modelica/releases/v10.0.0/help/Buildings_UsersGuide.html#Buildings.UsersGuide.Conventions):
 
 - Mass fraction
   - Uppercase `X` denotes mass fraction per total mass.
@@ -160,7 +160,7 @@ From [Buildings.UsersGuide.Conventions](https://simulationresearch.lbl.gov/model
 :::tip
 The naming conventions used for variables representing quantities (such as `T` for temperature) should be used in component names (typically sensors) for the sake of concision.
 
-For instance a sensor for supply air temperature should be named `TAirSup` instead of `senTemAirSup`.
+For example, a sensor for supply air temperature should be named `TAirSup` instead of `senTemAirSup`.
 :::
 
 ### Various
@@ -169,7 +169,7 @@ For instance a sensor for supply air temperature should be named `TAirSup` inste
 
 The letter `n` is used to represent a number of something (as opposed to `num`).
 
-The letter `y` is used to represent a fractional quantity (speed, opening, load) taking $1$ as maximum value, for instance `yLoa` for PLR.
+The letter `y` is used to represent a fractional quantity (speed, opening, load) taking $1$ as maximum value, e.g., `yLoa` for PLR.
 
 :::tip
 
