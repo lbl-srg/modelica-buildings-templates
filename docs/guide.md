@@ -4,6 +4,10 @@ sidebar_position: 1
 
 # Guide
 
+This document provides some requirements and recommendations for the development of HVAC system templates to be included in the [Modelica Buildings Library](https://github.com/lbl-srg/modelica-buildings) (MBL).
+It is primarily intended for developers and therefore contains some detailed implementation guidelines.
+For a more conceptual presentation of MBL templates, see [Gautier (2023)](/more/references#Gautier23).
+
 ## Interface Class: What Shall Be Declared? {#interface-class}
 
 ### Outside Connectors Needed by Any Derived Class
@@ -29,10 +33,10 @@ Type compatibility:
 
 So checking that the redeclared component is a subtype of the constraining class is done with all the conditional connectors considered present (even if the redeclared component removes them).
 
-*How does it differ from interface classes in MBL?*
+*How does it differ from interface classes in the Modelica Buildings Library?*
 
 Interface classes are usually implemented with the minimum set of connectors (and other variables) and derived classes extend that set, which ensures *type* compatibility.
-See for instance:
+See for example:
 
 ```mo title="Fluid/Boilers/BaseClasses/PartialBoiler.mo"
 extends Interfaces.TwoPortHeatMassExchanger(...); // Interface class used by the model
@@ -51,7 +55,7 @@ Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort  // Additional conn
 
 The parameter record is for propagation of design and operating parameters across the instance tree.
 
-The local design parameter declarations ensure that a standard set of parameters is available in any template or component, whatever the configuration.
+The local design parameter declarations ensure that a standard set of parameters is available in any template or component, for any configuration.
 (For example, an evaporator coil still has `mChiWat_flow_nominal` defined with a final assignment to `0`.)
 This way, one can easily compute the sum of a quantity over a set of instances.
 (For example, the total CHW flow rate over all terminal units.)
@@ -170,7 +174,7 @@ extends Buildings.Templates.AirHandlersFans.Interfaces.PartialAirHandler(
     final stdVen=ctl.stdVen), ...);
 ```
 
-So that the top-level parameter record can access all configuration parameters of a VAV instance with a single binding as follows.
+This allows the top-level parameter record to access all configuration parameters of a VAV instance with a single binding as follows.
 
 ```mo title="Templates/AirHandlersFans/Validation/UserProject/Data/AllSystems.mo"
 outer VAV VAV_1
@@ -182,7 +186,7 @@ parameter Buildings.Templates.AirHandlersFans.Data.VAVMultiZone dat_VAV_1(
 
 ### Nested Expandable Connectors
 
-The interface class of the [main controller](#main-controller) should have protected instances of all sub-buses, connected to the corresponding variables from the main control bus as follows.
+The interface class of the [main controller](#main-controller)  must have protected instances of all sub-buses, and these sub-bus instances must be connected to the corresponding variables from the main control bus as follows:
 
 ```mo title="Templates/ChilledWaterPlants/Components/Interfaces/PartialController.mo"
   Buildings.Templates.ChilledWaterPlants.Interfaces.Bus bus
@@ -195,12 +199,12 @@ equation
   connect(busValChiWatChiIso, bus.valChiWatChiIso)
 ```
 
-This is particularly important in the case of array sub-buses. We avoid pre-declaring these sub-buses in the main bus definition because this would require including structural parameters for the array size inside the bus, and thus binding these parameters for each bus instance. Instead, we use instances of sub-buses *in the interface class of the controller* and the connect statement `connect(bus<Component>, bus.<component>)` provides a hint to Modelica compilers to assign the correct dimensions to `bus.<component>` (which is not predeclared in the bus definition).
+This is particularly important in the case of array sub-buses. We avoid pre-declaring these sub-buses in the main bus definition because this would require including structural parameters for the array size inside the bus, and thus binding these parameters for each bus instance. Instead, we use instances of sub-buses *in the interface class of the controller* and the connect statement `connect(bus<Component>, bus.<component>)` allows Modelica compilers to assign the correct dimensions to `bus.<component>` (which is not predeclared in the bus definition).
 
 
 ## Replaceable Component
 
-No `choicesAllMatching` annotation is currently allowed in the `Templates` package (to maximize support across various Modelica tools).
+No `choicesAllMatching` annotation is allowed in the `Templates` package (to maximize support across various Modelica tools).
 Expand into an explicit `choices` annotation with proper description strings and the following rules.
 
 Systematically use `redeclare replaceable` in the `choices` annotation to allow
@@ -210,7 +214,7 @@ Systematically use `redeclare replaceable` in the `choices` annotation to allow
 
 ## Section
 
-A so-called section is needed whenever there is a hard constraint on the allowed choices for two replaceable components that are on the same composition level.
+A composite model that we call *section* is needed whenever there is a hard constraint on the allowed choices for two replaceable components that are on the same composition level.
 
 <details>
 
@@ -219,18 +223,18 @@ A so-called section is needed whenever there is a hard constraint on the allowed
 In the case of a multiple-zone VAV with an air economizer, a return fan should require a modulating relief damper. However, we cannot bind the redeclaration of the damper component to the redeclaration of the return fan component. So we introduce a section `Templates.AirHandlersFans.Components.ReliefReturnSection` that contains the two components, so that the whole section component can be redeclared with the proper inside fan and damper components.
 </details>
 
-The interface class for a section should use the same class for the control bus as the one used by the system template.
-This is different from the base components, which have their own class for the control bus, that is `Templates.Components.Interfaces.Bus`.
-The motivation is to avoid nesting expandable connectors and to allow seamless traversal of the composition levels when connecting signal variables, see for instance:
+The interface class for a section must use the same class for the control bus as the one used by the system template.
+This is different from the base components, which have their own class for the control bus, as is implemented in `Templates.Components.Interfaces.Bus`.
+The motivation is to avoid nesting expandable connectors and to allow seamless traversal of the composition levels when connecting signal variables, see for example:
 
 ```mo title="Templates/AirHandlersFans/VAVMultiZone.mo"
-connect(secOutRel.bus, bus);            // secOutRel is a section
-connect(ctl.bus, bus);                  // ctl is a controller
-
-// Buildings.Templates.AirHandlersFans.Components.OutdoorReliefReturnSection
+connect(secOutRel.bus, bus);            // secOutRel is a section (instance of OutdoorReliefReturnSection)
+connect(ctl.bus, bus);                  // ctl is a controller (instance of G36VAVMultiZone)
+```
+```mo title="Templates/AirHandlersFans/Components/OutdoorReliefReturnSection.mo"
 connect(damRet.bus, bus.damRet);        // connection to the damper bus inside the section
-
-// Buildings.Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone
+```
+```mo title="Templates/AirHandlersFans/Components/Controls/G36VAVMultiZone.mo"
 connect(ctl.yRetDamPos, bus.damRet.y);  // accessing the damper control variable inside the controller
 ```
 
@@ -238,16 +242,24 @@ connect(ctl.yRetDamPos, bus.damRet.y);  // accessing the damper control variable
 
 ### Control Section
 
-We instantiate all control blocks that form the control sequence of a system into one single class that is similar to a [section](#section), see for instance [`Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone`](https://github.com/lbl-srg/modelica-buildings/blob/14449dcb92a641b48b056cedcf58f446be2249b9/Templates/AirHandlersFans/Components/Controls/G36VAVMultiZone.mo).
+All control blocks that form the control sequence of a system must be instantiated into one single class that is similar to a [section](#section), see for example [`Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone`](https://github.com/lbl-srg/modelica-buildings/blob/90c974a19eac3333c1da139961c5c504797b9259/Buildings/Templates/AirHandlersFans/Components/Controls/G36VAVMultiZone.mo).
 
-Particularly this control section uses the same class for the control bus as the one used by the system template.
+Note that this control section uses the same class for the control bus as the one used by the system template.
 
-As opposed to the CDL implementation of the SOO, we only declare design and operating parameters strictly required by the SOO and propagated by means of the [parameter record](#parameter-record)&mdash;final bindings of the local parameters with the parameters from the record are used, see Section [Interface Class](#interface-class).
+In contrast to the CDL implementation of the SOO, we restrict the exposed parameters to the data that are
+
+- scheduled in design documents by the design engineer, or
+- provided by the testing, adjusting, and balancing contractor, or
+- determined by the control contractor.
+
+See [ASHRAE (2021)](/more/references#Ashrae21) Section&nbsp;3 for typical required data.
+
+These parameters are propagated by means of the [parameter record](#parameter-record).
 
 
 ### Control Point Connections
 
-Connect statements between signal (control) variables do not have graphical annotations.
+Connect statements between signal (control) variables do not have graphical annotations, as they would visually overload the schematic view.
 Instead, a dedicated section is used at the top of the `equation` section.
 
 ```mo title="Templates/AirHandlersFans/VAVMultiZone.mo"
@@ -276,10 +288,10 @@ equation
 Use the same name for the signal variable and for the component it originates from.
 :::
 
-Inside the control section, connections to variables within nested expandable connectors should be done by means of the [local instances of these sub-buses](#nested-expandable-connectors) to guarantee that Modelica compilers assign correct dimensions to these variables.
+Inside the control section, connections to variables within nested expandable connectors should be done by means of the [local instances of sub-buses](#nested-expandable-connectors) to guarantee that Modelica compilers assign correct dimensions to these variables.
 See the example in [Gautier (2023)](/more/references#Gautier23) Section&nbsp;5. See also:
 
-```mo title="Templates/ChilledWaterPlants/Components/Controls.G36.mo"
+```mo title="Templates/ChilledWaterPlants/Components/Controls/G36.mo"
 equation
   /* Control point connection - start */
   connect(busChi.y1ChiWatReq, ctl.uChiWatReq);  // as opposed to connect(bus.chi.y1ChiWatReq, ctl.uChiWatReq)
@@ -289,8 +301,9 @@ equation
 
 Most of the component models (such as `Templates.Components.Chillers.Compression`) compute the [status signal](/more/glossary/#status) using the `pre` operator applied to the [command signal](/more/glossary/#command).
 
-This is unless the equipment model that is wrapped inside the component (such as `Fluid.Actuators.Dampers.Exponential`) already provides a status as an output (for instance `y_actual` for actuator and mover models) ***and*** `use_inputFilter=true`.
-If `use_inputFilter=false` then `y_actual` is connected to the input signal `y`, which likely yields an algebraic loop if the control logic uses the equipment status.
+An exception are equipment models (such as `Fluid.Actuators.Dampers.Exponential`)
+that already provide a status as an output (for example `y_actual` for actuator and mover models) ***and*** `use_inputFilter=true`.
+If `use_inputFilter=false` then `y_actual` is directly connected to the input signal `y`, which likely yields an algebraic loop if the control logic uses the equipment status.
 
 :::caution Open Issue
 
@@ -356,12 +369,12 @@ However, other classes such as `Fluid.Actuators.BaseClasses.PartialTwoWayValve` 
 
 </details>
 
-This allows simpler propagation (only the record is passed in) which is agnostic from the parameter structure of the constraining class (for instance `mWat_flow_nominal` is not defined in `Templates.Components.Coils.Interfaces.PartialCoil`).
+This allows simpler propagation (only the record is passed in) which is agnostic from the parameter structure of the constraining class (for example `mWat_flow_nominal` is not defined in `Templates.Components.Coils.Interfaces.PartialCoil`).
 
 #### Use Only One Nesting Level
 
 If needed, component records must extend (not instantiate) subcomponent records.
-For instance in `Templates.Components.Coils.Interfaces.Data`:
+For example in `Templates.Components.Coils.Interfaces.Data`:
 
 - the class cannot extend `Templates.Components.Valves.Interfaces.Data` because of the colliding declarations of `typ`,
 - so `dpValve_nominal` is declared locally and a protected record with the type `Templates.Components.Valves.Interfaces.Data` is constructed to pass in parameters to the valve component.
@@ -376,7 +389,7 @@ In addition to the configuration parameters, the record contains all design and 
 1. by the sequence of operation for all possible system configurations, see [ASHRAE (2021)](/more/references#Ashrae21) Section 3,
 2. for sizing equipment models (most of these parameters are already included in 1.).
 
-Modeling and advanced parameters ***shall not be included*** in this record.
+Modeling and parameters from the "Advanced" dialog tab ***shall not be included*** in this record.
 The record should be viewed as a digital avatar of the manufacturer’s data sheet for a given system, and as such, should only contain equipment and control parameters that HVAC designers are familiar with.
 
 
@@ -402,7 +415,7 @@ Refer to the [specification for the generation of engineering schematics](https:
 
 ### Example
 
-Below is an illustration of the kind of schematic (or control diagram) we want to generate, taken from `Templates.HeatingPlants.HotWater.Validation.BoilerPlant` in branch `issue3266_template_HW_plant`, using Dymola's feature "Show Component".
+Below is an illustration of the kind of schematic (or control diagram) we want to generate, taken from [`Templates.HeatingPlants.HotWater.Validation.BoilerPlant`](https://github.com/lbl-srg/modelica-buildings/blob/4efb7ed6e0f307f339714a6b238e52922f193234/Buildings/Templates/HeatingPlants/HotWater/Validation/BoilerPlant.mo) in branch `issue3266_template_HW_plant`, using Dymola's feature "Show Component".
 
 ![schmatic](/img/HWPlant.png)
 
@@ -417,7 +430,7 @@ Currently the SVG graphics integrated using class annotations such as `Icon(grap
 - entirely supported by Dymola `>=2022.x`.
 :::
 
-The master SVG document containing all raw icons provided by Taylor Engineering and used in [ASHRAE (2021)](/more/references#Ashrae21) is currently located at [`Resources/Images/Templates/Icons.svg`](https://github.com/lbl-srg/modelica-buildings/blob/master/Resources/Images/Templates/Icons.svg).
+The master SVG document containing all raw icons provided by Taylor Engineering and used in [ASHRAE (2021)](/more/references#Ashrae21) is currently located at [`Resources/Images/Templates/Icons.svg`](https://github.com/lbl-srg/modelica-buildings/blob/90c974a19eac3333c1da139961c5c504797b9259/Buildings/Resources/Images/Templates/Icons.svg).
 
 Those raw icons must be processed as described below for Inkscape `>=1.1` before being used in the icon layers of Modelica classes.
 
@@ -427,7 +440,7 @@ The requirements below stem from the following observations.
 
 - The [Modelica Language Specification](https://specification.modelica.org/maint/3.5/annotations.html#common-definitions) specifies `type DrawingUnit = Real(final unit="mm")`.
 - The default icon layer size in Dymola is $200 \times 200$&nbsp;mm (`{{-100,-100},{100,100}}`). This corresponds to $10 \times 10$&nbsp;cells in the icon view. So one cell corresponds to $20 \times 20$&nbsp;mm.
-- When instantiated, a component has its icon scaled by a factor $1/10$ in the diagram layer. For instance, a `Line` object with `thickness=5` in the icon layer is rendered as a `Line` object with `thickness=0.5` in the diagram layer.
+- When instantiated, a component has its icon scaled by a factor $1/10$ in the diagram layer. For example, a `Line` object with `thickness=5` in the icon layer is rendered as a `Line` object with `thickness=0.5` in the diagram layer.
 - When `thickness < 0.25`, the stroke width remains unchanged in Dymola: so $0.2$ and $0.1$ yield the same stroke width.
 - It seems that Dymola handles Bitmap objects as squares, i.e., the objects are scaled by the minimum of the `x` and `y` dimensions. Having external SVG files with equal height and width makes it easier to position and scale the graphical objects.
 
@@ -485,7 +498,7 @@ All vendor annotations are hierarchical annotations in the form of `"__ctrlFlow"
 It is uncanny to use a hierarchical annotation here because `__ctrlFlow(template=false)` will never be used. Prefer `__ctrlFlow_template` which is also easier to test for?
 :::
 
-Ctrl-flow greps for this annotation and returns a list of files which are then treated as entry points to build the tree of system types. Both packages (corresponding to system types such as `Templates.AirHandlersFans`) and template classes (such as `Templates.AirHandlersFans.VAVMultiZone`) shall contain this annotation.
+Ctrl-flow searches for this annotation and returns a list of files which are then treated as entry points to build the tree of system types. Both packages (corresponding to system types such as `Templates.AirHandlersFans`) and template classes (such as `Templates.AirHandlersFans.VAVMultiZone`) shall contain this annotation.
 
 So the file arborescence:
 
@@ -519,7 +532,7 @@ yields the following UI objects:
 
 :::caution Currently patched
 
-Currently, (as of MBL commit `88b6ccdd08`) this annotation is not included in the Modelica classes but rather patched when preprocessing the Templates package to serve ctrl-flow app.
+Currently, (as of the Modelica Buildings Library v10.0.0) this annotation is not included in the Modelica classes but rather patched when preprocessing the Templates package to serve the ctrl-flow app.
 The necessary refactoring is tracked at [#357](https://github.com/lbl-srg/ctrl-flow-dev/issues/357).
 
 :::
@@ -528,7 +541,7 @@ The necessary refactoring is tracked at [#357](https://github.com/lbl-srg/ctrl-f
 
 <summary>Alternative Approach Discussed With DEPT but Not Implemented</summary>
 
-> We should rather use a flag indicating that a package (in our case `Templates`) is to be considered as the "root" for all template URIs, for instance: `__ctrlFlow(routing="root")`. And for each template class (for instance `Templates.AirHandlersFans.VAVMultiZone`): `__ctrlFlow(routing="template")`. The contract for the template developer will then be that the class URI dictates the explorer tree structure, starting from the "root" package (necessarily unique inside a library). So for instance the template `Templates.AirHandlersFans.VAVMultiZone` with the above annotation would yield the following tree structure.
+> We should rather use a flag indicating that a package (in our case `Templates`) is to be considered as the "root" for all template URIs, for example: `__ctrlFlow(routing="root")`. And for each template class (for example `Templates.AirHandlersFans.VAVMultiZone`): `__ctrlFlow(routing="template")`. The contract for the template developer will then be that the class URI dictates the explorer tree structure, starting from the "root" package (necessarily unique inside a library). For example, the template `Templates.AirHandlersFans.VAVMultiZone` with the above annotation would yield the following tree structure.
 > ```sh
 > AirHandlersFans
 > └── VAVMultiZone
@@ -542,9 +555,9 @@ The necessary refactoring is tracked at [#357](https://github.com/lbl-srg/ctrl-f
 
 #### `__ctrlFlow(enable=true|false)`
 
-Each declaration or `extends` statement may have a hierarchical annotation `"__ctrlFlow" "(" "enable" "=" logical-expression ")"` that allows disabling input fields in ctrl-flow configuration dialog. This is similar to Modelica annotation `Dialog(enable=true|false)` but provides additional flexibility and allows disabling all parameter input fields that are brought in by an `extends` statement.
+Each declaration or `extends` statement may have a hierarchical annotation `"__ctrlFlow" "(" "enable" "=" logical-expression ")"` that allows disabling input fields in the ctrl-flow configuration dialog. This is similar to the Modelica annotation `Dialog(enable=true|false)` but provides additional flexibility and allows disabling all parameter input fields that are brought in by an `extends` statement.
 
-It takes precedence on the standard annotation `Dialog(enable)`.
+It takes precedence over the standard annotation `Dialog(enable)`.
 
 Typical use cases include classes from the Modelica Buildings Library that contain definitions of detailed simulation parameters and that are extended to define template components, or package classes used to specify the fluid properties.
 
@@ -552,7 +565,7 @@ Typical use cases include classes from the Modelica Buildings Library that conta
 
 <summary>Boolean Literal or Expression?</summary>
 
-Although only Boolean literals are used in the templates as of commit 675801b669, the expression evaluation engine is invoked when parsing `__ctrlFlow(enable...)`, see https://github.com/lbl-srg/ctrl-flow-dev/blob/main/server/src/parser/parser.ts#L296-L317. So in practice, Boolean expressions could be used.
+Although only Boolean literals are used in the templates as of commit 675801b669, the expression evaluation engine is invoked when parsing `__ctrlFlow(enable...)`, see https://github.com/lbl-srg/ctrl-flow-dev/blob/e2bb34ca76e0d1ed7413691a89ffd8525e16c750/server/src/parser/parser.ts#L296-L317. So in practice, Boolean expressions could be used.
 
 </details>
 
@@ -560,7 +573,7 @@ Although only Boolean literals are used in the templates as of commit 675801b669
 
 ### Git Workflow
 
-Each new development should start by branching out from the master branch of MBL.
+Each new development should start by branching out from the master branch of the Modelica Buildings Library.
 
 The current development branches are
 
