@@ -201,8 +201,9 @@ equation
 
 This is particularly important in the case of array sub-buses. We avoid pre-declaring these sub-buses in the main bus definition because this would require including structural parameters for the array size inside the bus, and thus binding these parameters for each bus instance. Instead, we use instances of sub-buses *in the interface class of the controller* and the connect statement `connect(bus<Component>, bus.<component>)` allows Modelica compilers to assign the correct dimensions to `bus.<component>` (which is not predeclared in the bus definition).
 
+## Components
 
-## Replaceable Component
+### Replaceable Component
 
 No `choicesAllMatching` annotation is allowed in the `Templates` package (to maximize support across various Modelica tools).
 Expand into an explicit `choices` annotation with proper description strings and the following rules.
@@ -211,8 +212,14 @@ Systematically use `redeclare replaceable` in the `choices` annotation to allow
 - further redeclaration by the user,
 - visiting the parameter dialog box of the redeclared component (this is Dymola's behavior, although this behavior is automatically enabled if the redeclared component contains replaceable components).
 
+### Non-replaceable Component
 
-## Section
+If a composite component (such as a [section](#section)) contains replaceable components, or components with configuration parameters that must be exposed, then it must be instantiated with the `replaceable` keyword so that ctrl-flow generates a parameter dialog for this component, and allows the user to specify the options for the nested components.
+
+This is true even if the type of the composite component is fixed.
+In this case, the component is still declared as `replaceable`, but without any `choices` annotation (e.g., section `secOutRel` in `Templates/AirHandlersFans/VAVMultiZone.mo`).
+
+### Section
 
 A composite model that we call *section* is needed whenever there is a hard constraint on the allowed choices for two replaceable components that are on the same composition level.
 
