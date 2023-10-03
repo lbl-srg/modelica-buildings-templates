@@ -32,15 +32,15 @@ const config = {
   onBrokenMarkdownLinks: 'throw',
 
   // Set the production url of your site here
-  url: 'https://antoinegautier.github.io',
+  url: 'https://lbl-srg.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/template-dev-docs/',
+  baseUrl: '/modelica-buildings-templates/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'AntoineGautier', // Usually your GitHub org/user name.
-  projectName: 'template-dev-docs', // Usually your repo name.
+  projectName: 'modelica-buildings-templates', // Usually your repo name.
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
