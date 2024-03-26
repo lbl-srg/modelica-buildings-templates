@@ -399,6 +399,7 @@ In addition to the configuration parameters, the record contains all design and 
 Modeling and parameters from the "Advanced" dialog tab ***shall not be included*** in this record.
 The record should be viewed as a digital avatar of the manufacturer’s data sheet for a given system, and as such, should only contain equipment and control parameters that HVAC designers are familiar with.
 
+<font color="#9900FF"> 🚧 Update with details on the use of `Dialog(enable)`. Reference Section 6.2 and Listing 2 of [Gautier (2023)](/more/references#Gautier23) and mention the requirement to assign the `start` attribute whenever `Dialog(enable)` is used, ***even if a default value is provided***&mdash;because the user may delete the default, then change a configuration parameter that would disable the value parameter that is now unassigned.  </font>
 
 #### System Tags
 

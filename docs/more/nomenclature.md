@@ -91,19 +91,24 @@ All CamelCase morphemes should be used before the first underscore&mdash;such as
 
 :::
 
+<font color="#9900FF"> 🚧 Update with recommendations for camelCase from https://stackoverflow.com/questions/15526107/acronyms-in-camelcase </font>
 
 For variable and instance names:
 
-| Rather use | Instead of |
-| ---------- | ---------- |
-| ChiWat     | CHW        |
-| ConWat     | CW         |
-| HeaWat     | HHW        |
-| HotWat     | DHW        |
-| Eco        | WSE        |
-| Hex        | HX         |
-| AirHan     | AHU        |
-| Coo        | CT         |
+| Rather use | Instead of | To designate |
+| ---------- | ---------- | ------------ |
+| ChiWat (*)      | CHW        | Chilled water |
+| ConWat (*)      | CW         | Condenser water  |
+| HeaWat (*)      | HHW        | Heating hot water  |
+| HotWat (*)      | DHW        | Domestic hot water |
+| Eco (*)         | WSE        | Waterside economizer |
+| Hex (*)         | HX         | Heat exchanger  |
+| Hp        | HP         | Heat pump |
+| Hrc        | HRC        | Heat recovery chiller |
+| AirHan (*)      | AHU        | Air handling unit  |
+| Coo        | CT         | Cooling tower or dry cooler |
+
+(*) These abbreviations are being used by legacy. If we were to decide today, it would make more sense to rather use: Chw, Cw, Hw, Dhw, Wse, Hx, Ahu.
 
 Tolerated exceptions:
 
@@ -114,7 +119,7 @@ Tolerated exceptions:
 
 ## Fixed Position or Non-abbreviated Forms
 
-- `_nominal`, `_min`, `_max` and `_actual` always at the end
+- `_nominal`, `_min`, `_max`, `_actual`, `_default` always at the end
 
   <details>
 
@@ -164,6 +169,26 @@ For example, a sensor for supply air temperature should be named `TAirSup` inste
 :::
 
 ### Various
+
+We systematically use the parameter `cap*_nominal` to specify a system capacity. Design engineers are used to provide an unsigned number (positive) for both the heating and cooling capacities. However, MBL users are rather accustomed to using `Q*_flow_nominal` as a signed parameter. So, for consistency with MBL, each template must make a final assignment of `Q*_flow_nominal = +/- abs(cap*_nominal)` so that this parameter be always available. Nevertheless, `cap*_nominal` has no `min` or `max` attribute so that the user can provide either a signed or an unsigned variable.
+
+<details>
+
+<summary>Example</summary>
+
+For example, a chiller template would have the following declarations.
+
+```mo
+  parameter Modelica.Units.SI.HeatFlowRate cap_nominal  // No min and max attributes.
+    "Design cooling capacity";
+  final parameter Modelica.Units.SI.HeatFlowRate Q_flow_nominal(final max=0)=  // Final assignment that must be negative.
+    -abs(capHea_nominal)
+    "Design cooling heat flow rate";
+```
+
+</details>
+
+
 
 `Set` for a set point, always as the last morpheme: so `TZonHeaOccSet` not `TZonHeaSetOcc`.
 
