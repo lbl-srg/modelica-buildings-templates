@@ -113,7 +113,7 @@ This record instance is not needed directly within a template class, but rather 
 It can be considered as the "signature" for a given system configuration, accessible within any template.
 
 The instance `cfg` must be ultimately assigned the `final` keyword, as it should not be exposed to the user.
-Contrary to design and operating parameters, the configuration parameters are propagated (with `final`bindings) *from* the component model *to* the record instance.
+Contrary to design and operating parameters, the configuration parameters are propagated (with `final` bindings) *from* the component model *to* the record instance.
 
 <details>
 
@@ -186,7 +186,7 @@ parameter Buildings.Templates.AirHandlersFans.Data.VAVMultiZone dat_VAV_1(
 
 ### Nested Expandable Connectors
 
-The interface class of the [main controller](#main-controller)  must have protected instances of all sub-buses, and these sub-bus instances must be connected to the corresponding variables from the main control bus as follows:
+The interface class of the [main controller](#main-controller) must have protected instances of all sub-buses, and these sub-bus instances must be connected to the corresponding variables from the main control bus as follows:
 
 ```mo title="Templates/ChilledWaterPlants/Components/Interfaces/PartialController.mo"
   Buildings.Templates.ChilledWaterPlants.Interfaces.Bus bus
@@ -247,11 +247,26 @@ connect(ctl.yRetDamPos, bus.damRet.y);  // accessing the damper control variable
 
 ## Main Controller
 
+The template is intended to be used by applications other than Modelica tools, such as [ctrl-flow](https://ctrl-flow.lbl.gov/). To be compatible with these applications, the controller implementation must respect the following rules.
+
 ### Control Section
 
-All control blocks that form the control sequence of a system must be instantiated into one single class that is similar to a [section](#section), see for example [`Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone`](https://github.com/lbl-srg/modelica-buildings/blob/90c974a19eac3333c1da139961c5c504797b9259/Buildings/Templates/AirHandlersFans/Components/Controls/G36VAVMultiZone.mo).
+All blocks that constitute the control sequence of a system are instantiated within a single component within the template.
+This component is referred to as the "control section" and is named `ctl`. It is similar to a [section](#section), see for example [`Templates.AirHandlersFans.Components.Controls.G36VAVMultiZone`](https://github.com/lbl-srg/modelica-buildings/blob/90c974a19eac3333c1da139961c5c504797b9259/Buildings/Templates/AirHandlersFans/Components/Controls/G36VAVMultiZone.mo).
 
-Note that this control section uses the same class for the control bus as the one used by the system template.
+
+The component `ctl` is *not* CDL-compliant due to the following reasons:
+
+- It contains extends and redeclare statements.
+- It may include inner and outer declarations.
+  - This remains true for the VAV templates, which were the first to be developed. However, the most recently developed templates have deprecated the use of inner and outer declarations, with the exception of the requirement stated below.
+  - Beyond the control section, to reference the configuration parameters from each configuration class prior to class instantiation, it is also necessary to include outer declarations within the top-level data record that stores the control parameter values.
+- It uses expandable connectors.
+- It may have an initial equation section.
+- It employs non-permissible data types, such as `Modelica.Units.SI.**`.
+- It assigns values to parameters using variables from the equipment model, which are outside the CDL scope.
+
+### Control Parameters and Binding Equations
 
 In contrast to the CDL implementation of the SOO, we restrict the exposed parameters to the data that are
 
@@ -263,10 +278,15 @@ See [ASHRAE (2021)](/more/references#Ashrae21) Section&nbsp;3 for typical requir
 
 These parameters are propagated by means of the [parameter record](#parameter-record).
 
+:::danger Important
+Control parameters within the control section shall be assigned a value using only binding equations that involve expressions permitted in CDL: see https://obc.lbl.gov/specification/cdl.html#parameter-declaration-and-assigning-of-values-to-parameters.
+:::
 
 ### Control Point Connections
 
-Connect statements between signal (control) variables do not have graphical annotations, as they would visually overload the schematic view.
+All connect clauses between the control blocks within `ctl` have a graphical annotation (so there are visible connection lines representing those connections).
+
+Most of the other connect clauses have no graphical annotation — typically the connection to a sensor or actuator signal — as this would overload the diagram view.
 Instead, a dedicated section is used at the top of the `equation` section.
 
 ```mo title="Templates/AirHandlersFans/VAVMultiZone.mo"
@@ -291,6 +311,8 @@ equation
   /* Control point connection - stop */
 ```
 
+Note that the control section uses the same class for the control bus as the one used by the system template.
+
 :::tip
 Use the same name for the signal variable and for the component it originates from.
 :::
@@ -306,22 +328,17 @@ equation
 
 ### Equipment Status
 
-Most of the component models (such as `Templates.Components.Chillers.Compression`) compute the [status signal](/more/glossary/#status) using the `pre` operator applied to the [command signal](/more/glossary/#command).
+An ad hoc [component](https://github.com/lbl-srg/modelica-buildings/blob/05e02f395bbfae2ad0430936620b09e7823cae63/Buildings/Templates/Components/Controls/StatusEmulator.mo) has been developed to emulate the equipment status and should be used systematically.
 
-An exception are equipment models (such as `Fluid.Actuators.Dampers.Exponential`)
-that already provide a status as an output (for example `y_actual` for actuator and mover models) ***and*** `use_inputFilter=true`.
-If `use_inputFilter=false` then `y_actual` is directly connected to the input signal `y`, which likely yields an algebraic loop if the control logic uses the equipment status.
+The only exception applies to equipment models (like `Fluid.Actuators.Dampers.Exponential`)
+that already provide a feedback signal as an output (for example `y_actual` for actuator and mover models).
+However, if `use_inputFilter=false` then `y_actual` is directly connected to the input signal `y`, potentially creating an algebraic loop if the control logic uses the equipment status.
 
 :::caution Open Issue
 
-Switching to using `pre(y)` instead of `y_actual` if `use_inputFilter=false` is being implemented through [#3499](https://github.com/lbl-srg/modelica-buildings/issues/3499).
+Switching to using `StatusEmulator` instead of `y_actual` if `use_inputFilter=false` is being implemented through [#3499](https://github.com/lbl-srg/modelica-buildings/issues/3499).
 
 :::
-
-This convention implies the following requirement for the SOO implementation.
-
-> The `pre` operator should not be applied to the command signal when comparing it with the feedback signal.<br />
-> See the issue reported at https://github.com/lbl-srg/modelica-buildings/pull/2299#issuecomment-1446417462.
 
 
 ## Parameter Record
@@ -350,12 +367,6 @@ OCT never yields a warning.
 When instantiated within the interface class, the parameter record uses a binding with the [local instance of the configuration record](#configuration-record), i.e., `dat(cfg=cfg)`.
 Here again, because this binding will be overridden when propagated `dat` from a top-level whole-building record, the `final` keyword must not be used in this binding.
 
-:::caution Currently Under Development
-
-Currently, all configuration parameters are included in the master record with a flat structure.
-Through issue [#3500](https://github.com/lbl-srg/modelica-buildings/issues/3500) a subrecord `cfg` will be introduced and include all configuration parameters.
-Ongoing template developments should adopt the same construct with a subrecord `cfg` for configuration parameters.
-:::
 
 #### Parameter Propagation
 
@@ -398,6 +409,24 @@ In addition to the configuration parameters, the record contains all design and 
 
 Modeling and parameters from the "Advanced" dialog tab ***shall not be included*** in this record.
 The record should be viewed as a digital avatar of the manufacturer’s data sheet for a given system, and as such, should only contain equipment and control parameters that HVAC designers are familiar with.
+
+The set of required parameters depends on the actual system configuration.
+However, MLS does not allow parameters to be conditionally instantiated. (More precisely, conditional components can only be used in connect statements, which prevents the use of conditional parameters.)
+As a workaround, we use parameter declarations with
+- an `enable` annotation, and
+- an explicit `start` attribute.
+
+<details>
+
+From the language specification:
+
+> If `enable = false`, the input field may be disabled and no input can be given.
+
+In our case, if the `enable` attribute evaluates to false, these parameters are actually not used in the flat equation system — after removing the conditional components with false condition and taking into account all redeclarations. We use the start attribute to provide a "placeholder" value that has no impact whatsoever on the simulation results.
+
+For more details, refer to Section 6.2 and Listing 2 of [Gautier (2023)](/more/references#Gautier23).
+
+</details>
 
 
 #### System Tags
@@ -494,16 +523,14 @@ inner parameter Boolean viewDiagramAll=false
 
 ## Vendor Specific Annotations
 
-All vendor annotations are hierarchical annotations in the form of `"__ctrlFlow" class-modification`. Strict camel case formatting is used for any argument in the class modification. No simple annotation in the form of `"__ctrlFlow" "_" IDENT` is used.
+Vendor annotations are either
+
+- hierarchical annotations in the form of `"__ctrlFlow" class-modification`, using strict camel case formatting for any argument in the class modification, or
+- simple annotations in the form of `"__ctrlFlow" "_" IDENT`.
 
 ### Class Annotations
 
-#### `__ctrlFlow(template=true|false)`
-
-:::danger FIXME
-
-It is uncanny to use a hierarchical annotation here because `__ctrlFlow(template=false)` will never be used. Prefer `__ctrlFlow_template` which is also easier to test for?
-:::
+#### `__ctrlFlow_template`
 
 Ctrl-flow searches for this annotation and returns a list of files which are then treated as entry points to build the tree of system types. Both packages (corresponding to system types such as `Templates.AirHandlersFans`) and template classes (such as `Templates.AirHandlersFans.VAVMultiZone`) shall contain this annotation.
 
@@ -535,14 +562,6 @@ Templates
 yields the following UI objects:
 
 ![control](/img/list_systems_ui.png)
-
-
-:::caution Currently patched
-
-Currently, (as of the Modelica Buildings Library v10.0.0) this annotation is not included in the Modelica classes but rather patched when preprocessing the Templates package to serve the ctrl-flow app.
-The necessary refactoring is tracked at [#357](https://github.com/lbl-srg/ctrl-flow-dev/issues/357).
-
-:::
 
 <details>
 
@@ -581,11 +600,6 @@ Although only Boolean literals are used in the templates as of commit 675801b669
 ### Git Workflow
 
 Each new development should start by branching out from the master branch of the Modelica Buildings Library.
-
-The current development branches are
-
-- `issue1374_template_CHW_final`
-- `issue3266_template_HW_plant`
 
 ### Code Tags
 

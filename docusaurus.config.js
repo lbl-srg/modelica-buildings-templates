@@ -26,7 +26,7 @@ const katex = require('rehype-katex');
 const config = {
   title: 'ctrl-flow',
   tagline: 'Modelica Template Development Guide',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'throw',
@@ -101,7 +101,7 @@ const config = {
         title: 'ctrl-flow',
         logo: {
           alt: 'Logo',
-          src: 'img/favicon.ico',
+          src: 'img/favicon.png',
         },
         items: [
           {
