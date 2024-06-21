@@ -91,26 +91,25 @@ All CamelCase morphemes should be used before the first underscore&mdash;such as
 
 :::
 
-<font color="#9900FF"> 🚧 Update with recommendations for camelCase from https://stackoverflow.com/questions/15526107/acronyms-in-camelcase </font>
-
 For variable and instance names:
 
 | Rather use | Instead of | To designate |
 | ---------- | ---------- | ------------ |
-| ChiWat (*)      | CHW        | Chilled water |
-| ConWat (*)      | CW         | Condenser water  |
-| HeaWat (*)      | HHW        | Heating hot water  |
-| HotWat (*)      | DHW        | Domestic hot water |
-| Eco (*)         | WSE        | Waterside economizer |
-| Hex (*)         | HX         | Heat exchanger  |
-| Hp        | HP         | Heat pump |
-| Hrc        | HRC        | Heat recovery chiller |
-| AirHan (*)      | AHU        | Air handling unit  |
-| Coo        | CT         | Cooling tower or dry cooler |
+| airHan (*)      | AHU        | Air handling unit  |
+| chiWat (*)      | CHW        | Chilled water |
+| conWat (*)      | CW         | Condenser water  |
+| coo        | CT         | Cooling tower or dry cooler |
+| eco (*)         | WSE        | Waterside economizer |
+| heaWat (*)      | HHW        | Heating hot water  |
+| hex (*)         | HX         | Heat exchanger  |
+| hotWat (*)      | DHW        | Domestic hot water |
+| hp        | HP         | Heat pump |
+| hrc        | HRC        | Heat recovery chiller |
 
-(*) These abbreviations are being used by legacy. If we were to decide today, it would make more sense to rather use: Chw, Cw, Hw, Dhw, Wse, Hx, Ahu.
+(*) These abbreviations are being used by legacy. If we were to decide today, it would make more sense to rather use lower case abbreviations: chw, cw, hw, dhw, wse, hx, ahu.
+This is more aligned with the considerations from https://stackoverflow.com/questions/15526107/acronyms-in-camelcase.
 
-Tolerated exceptions:
+Tolerated exceptions (by legacy again, today it would make more sense to use lower case abbreviations):
 
 - COP
 - VAV
@@ -182,7 +181,7 @@ For example, a chiller template would have the following declarations.
   parameter Modelica.Units.SI.HeatFlowRate cap_nominal  // No min and max attributes.
     "Design cooling capacity";
   final parameter Modelica.Units.SI.HeatFlowRate Q_flow_nominal(final max=0)=  // Final assignment that must be negative.
-    -abs(capHea_nominal)
+    -abs(cap_nominal)
     "Design cooling heat flow rate";
 ```
 
