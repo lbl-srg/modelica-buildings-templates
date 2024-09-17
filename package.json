@@ -27,6 +27,10 @@
     "rehype-katex": "^5.0.0",
     "remark-math": "^3.0.1"
   },
+  "overrides": {
+    "path-to-regexp": "^3.3.0",
+    "trim": "0.0.3"
+  },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "2.4.1"
   },
