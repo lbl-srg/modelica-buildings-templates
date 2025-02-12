@@ -2,7 +2,7 @@ import type { Config, PluginModule } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 import type { MDXPlugin } from "@docusaurus/mdx-loader";
 import { themes as prismThemes } from "prism-react-renderer";
-import * as remarkMath from "remark-math";
+import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeShiki, { RehypeShikiOptions } from "@shikijs/rehype";
 import {
@@ -22,16 +22,17 @@ const modelicaGrammar = JSON.parse(
   fs.readFileSync("./static/modelica.tmLanguage.json", "utf8"),
 );
 const modelica = {
-  id: "modelica",
+  name: "modelica",
   ext: "mo",
   scopeName: "source.modelica",
   aliases: ["mo", "modelica"],
   ...modelicaGrammar
-};
+} as BundledLanguage;
 const highlighter = createHighlighter({
   langs: [modelica],
   themes: []
 })
+console.log('bundledLanguages include modelica: ', Object.keys(bundledLanguages).includes('modelica'))
 
 const rehypeShikiPlugin = [
   rehypeShiki,
