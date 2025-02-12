@@ -1,16 +1,55 @@
-import { themes as prismThemes } from "prism-react-renderer"
-import type { Config } from "@docusaurus/types"
-import type * as Preset from "@docusaurus/preset-classic"
-import { remarkCodeHike, recmaCodeHike } from "codehike/mdx"
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import type { Config, PluginModule } from "@docusaurus/types";
+import type * as Preset from "@docusaurus/preset-classic";
+import type { MDXPlugin } from "@docusaurus/mdx-loader";
+import { themes as prismThemes } from "prism-react-renderer";
+import * as remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import rehypeShiki, { RehypeShikiOptions } from "@shikijs/rehype";
+import {
+  bundledLanguages,
+  createHighlighter,
+  type BundledLanguage,
+} from "shiki";
+import * as fs from "fs";
+import {
+  transformerMetaHighlight,
+  transformerNotationDiff,
+  transformerNotationHighlight,
+  transformerNotationFocus,
+} from "@shikijs/transformers";
 
-const chConfig = {
-  components: { code: "MyCode" },
-  syntaxHighlighting: {
-    theme: "github-dark",
-  },
-}
+const modelicaGrammar = JSON.parse(
+  fs.readFileSync("./static/modelica.tmLanguage.json", "utf8"),
+);
+const modelica = {
+  id: "modelica",
+  ext: "mo",
+  scopeName: "source.modelica",
+  aliases: ["mo", "modelica"],
+  ...modelicaGrammar
+};
+const highlighter = createHighlighter({
+  langs: [modelica],
+  themes: []
+})
+
+const rehypeShikiPlugin = [
+  rehypeShiki,
+  {
+    themes: {
+      light: "catppuccin-latte",
+      dark: "catppuccin-macchiato",
+    },
+    langs: Object.keys(bundledLanguages) as BundledLanguage[],
+    transformers: [
+          transformerMetaHighlight(),
+          transformerNotationDiff(),
+          transformerNotationHighlight(),
+          transformerNotationFocus(),
+    ],
+  } satisfies RehypeShikiOptions,
+] satisfies MDXPlugin;
+
 const config: Config = {
   title: "ctrl-flow",
   tagline: "Modelica Template Development Guide",
@@ -52,9 +91,8 @@ const config: Config = {
       "classic",
       {
         docs: {
-          routeBasePath: '/', // Serve the docs at the site's root
-          beforeDefaultRemarkPlugins: [[remarkCodeHike, chConfig]],
-          recmaPlugins: [[recmaCodeHike, chConfig]],
+          routeBasePath: "/", // Serve the docs at the site's root
+          beforeDefaultRehypePlugins: [rehypeShikiPlugin],
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           sidebarPath: require.resolve("./sidebars.ts"),
@@ -73,11 +111,11 @@ const config: Config = {
 
   stylesheets: [
     {
-      href: 'https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css',
-      type: 'text/css',
+      href: "https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css",
+      type: "text/css",
       integrity:
-        'sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM',
-      crossorigin: 'anonymous',
+        "sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM",
+      crossorigin: "anonymous",
     },
   ],
 
@@ -112,6 +150,6 @@ const config: Config = {
       darkTheme: prismThemes.dracula,
     },
   } satisfies Preset.ThemeConfig,
-}
+};
 
-export default config
+export default config;
