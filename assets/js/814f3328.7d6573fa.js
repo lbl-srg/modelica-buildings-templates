@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmodelica_buildings_templates=self.webpackChunkmodelica_buildings_templates||[]).push([[472],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[]}')}}]);

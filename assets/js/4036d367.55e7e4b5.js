@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmodelica_buildings_templates=self.webpackChunkmodelica_buildings_templates||[]).push([[782],{5681(e){e.exports=JSON.parse('{"metadata":{"permalink":"/modelica-buildings-templates/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":0,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);
