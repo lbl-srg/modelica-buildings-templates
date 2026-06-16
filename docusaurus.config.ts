@@ -1,55 +1,8 @@
-import type { Config, PluginModule } from "@docusaurus/types";
+import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
-import type { MDXPlugin } from "@docusaurus/mdx-loader";
 import { themes as prismThemes } from "prism-react-renderer";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import rehypeShiki, { RehypeShikiOptions } from "@shikijs/rehype";
-import {
-  bundledLanguages,
-  createHighlighter,
-  type BundledLanguage,
-} from "shiki";
-import * as fs from "fs";
-import {
-  transformerMetaHighlight,
-  transformerNotationDiff,
-  transformerNotationHighlight,
-  transformerNotationFocus,
-} from "@shikijs/transformers";
-
-const modelicaGrammar = JSON.parse(
-  fs.readFileSync("./static/modelica.tmLanguage.json", "utf8"),
-);
-const modelica = {
-  name: "modelica",
-  ext: "mo",
-  scopeName: "source.modelica",
-  aliases: ["mo", "modelica"],
-  ...modelicaGrammar
-} as BundledLanguage;
-const highlighter = createHighlighter({
-  langs: [modelica],
-  themes: []
-})
-console.log('bundledLanguages include modelica: ', Object.keys(bundledLanguages).includes('modelica'))
-
-const rehypeShikiPlugin = [
-  rehypeShiki,
-  {
-    themes: {
-      light: "catppuccin-latte",
-      dark: "catppuccin-macchiato",
-    },
-    langs: Object.keys(bundledLanguages) as BundledLanguage[],
-    transformers: [
-          transformerMetaHighlight(),
-          transformerNotationDiff(),
-          transformerNotationHighlight(),
-          transformerNotationFocus(),
-    ],
-  } satisfies RehypeShikiOptions,
-] satisfies MDXPlugin;
 
 const config: Config = {
   title: "ctrl-flow",
@@ -78,6 +31,8 @@ const config: Config = {
     locales: ["en"],
   },
 
+  clientModules: [require.resolve("./src/prism-modelica.js")],
+
   plugins: [
     [
       require.resolve("docusaurus-lunr-search"),
@@ -93,7 +48,6 @@ const config: Config = {
       {
         docs: {
           routeBasePath: "/", // Serve the docs at the site's root
-          beforeDefaultRehypePlugins: [rehypeShikiPlugin],
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           sidebarPath: require.resolve("./sidebars.ts"),

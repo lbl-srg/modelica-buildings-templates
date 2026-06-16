@@ -17,8 +17,6 @@
     "@docusaurus/core": "^3.10.1",
     "@docusaurus/preset-classic": "^3.10.1",
     "@mdx-js/react": "^3.0.0",
-    "@shikijs/rehype": "~1.22.2",
-    "@shikijs/transformers": "~1.22.2",
     "clsx": "^2.1.1",
     "docusaurus-lunr-search": "^3.6.0",
     "hast-util-is-element": "^3.0.0",
@@ -27,8 +25,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "rehype-katex": "^7.0.1",
-    "remark-math": "^6.0.0",
-    "shiki": "~1.22.2"
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.10.1",

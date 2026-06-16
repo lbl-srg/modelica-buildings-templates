@@ -30,13 +30,17 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="dark"] pre {
-  color: var(--shiki-dark) !important;
-  background-color: var(--shiki-dark-bg) !important;
-}
-[data-theme="dark"] pre span {
-  color: var(--shiki-dark) !important;
-}
+/* ── Modelica token colours ───────────────────────────────────────────────── */
+/* Neither prismThemes.github nor prismThemes.dracula define class-name or   */
+/* builtin, so we supply them here to match each theme's palette.            */
+
+/* Light (github) */
+:root .token.class-name  { color: #6f42c1; }   /* purple  — github class colour */
+:root .token.builtin     { color: #005cc5; }   /* blue    — github built-in colour */
+
+/* Dark (dracula) */
+[data-theme='dark'] .token.class-name { color: #8be9fd; }   /* cyan   — dracula type colour */
+/* dracula already styles builtin as rgb(189,147,249) (purple) */
 
 article {
   max-width: 700px;
