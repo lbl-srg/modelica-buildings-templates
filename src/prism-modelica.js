@@ -69,18 +69,22 @@ Prism.languages.modelica = {
       lookbehind: true
     },
 
-    // 4. Component declarations — dotted type name followed by a component name:
+    // 4. Component declarations — (possibly dotted) type name followed by a component name:
     //      Buildings.Controls.OBC.CDL.Interfaces.BooleanInput u1Hea
     //      Buildings.Controls.OBC.CDL.Reals.Subtract dT(k1=+1)
     //      Buildings.Controls.OBC.CDL.Interfaces.BooleanInput u1[nHp]
+    //      VAVMultiZone VAV_1(final dat=datAll.VAV_1)
     //
     // Heuristic guards to avoid false positives:
-    //   • The path must start with an uppercase letter (Modelica package convention).
+    //   • Each segment (and the final one) must start with an uppercase letter
+    //     (Modelica class-name convention), so a locally-defined, non-dotted
+    //     type name (e.g. VAVMultiZone) is matched just like a dotted one.
     //   • \b before the first segment prevents matching mid-identifier (e.g. u1Hea.y).
+    //   • The negative lookahead excludes primitive types (handled by 'builtin' below).
     //   • The lookahead (?=\s+\w) requires whitespace + identifier after the type name;
     //     this excludes bare field access (a.b.c) and function calls (Foo.bar()).
     {
-      pattern: /\b((?:[A-Z]\w*\.)+\w+)(?=\s+\w)/
+      pattern: /\b(?!(?:Real|Integer|Boolean|String|enumeration)\b)((?:[A-Z]\w*\.)*[A-Z]\w*)(?=\s+\w)/
     }
 
   ],

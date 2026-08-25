@@ -357,13 +357,24 @@ All design and operating parameters are declared within a Modelica record class.
 Within the parameter record, all configuration parameters are (only) accessible via an instance of the configuration record `cfg`.
 This instance uses the annotation `annotation (Dialog(enable=false))` as it should not be exposed to the user&mdash;and record classes do not allow for protected elements, and this instance cannot be `final` as it is overridden.
 
-:::note
+<details>
 
-The final override is debatable and the bindings of record instances containing final parameter assignments appear to be under-specified.
-As a result, the behavior varies across Modelica tools. And even for a given tool, it varies with the constructs being used (such as inheritance or direct definition).
-Dymola sometimes (see SRF00860858) triggers a "final overriding" error when a record instance contains final bindings and the record itself is propagated from a higher composition level.
-OCT never yields a warning.
-:::
+Illustration of the final override:
+
+```mo
+model VAVMultiZone
+  parameter AirHandlersFans.Data.VAVMultiZone dat(final cfg=cfg); // <-- final binding
+end VAVMultiZone;
+
+model Example
+  "Model that instantiates VAVMultiZone"
+  parameter UserProject.Data.AllSystems datAll(final VAV_1(cfg=VAV_1.cfg)) // <-- final override
+    "Design and operating parameters";
+  VAVMultiZone VAV_1(final dat=datAll.VAV_1);
+end Example;
+```
+
+</details>
 
 When instantiated within the interface class, the parameter record uses a binding with the [local instance of the configuration record](#configuration-record), i.e., `dat(cfg=cfg)`.
 Here again, because this binding will be overridden when propagated `dat` from a top-level whole-building record, the `final` keyword must not be used in this binding.
@@ -452,7 +463,7 @@ Refer to the [specification for the generation of engineering schematics](https:
 
 Below is an illustration of the kind of schematic (or control diagram) we want to generate, taken from [`Templates.HeatingPlants.HotWater.Validation.BoilerPlant`](https://github.com/lbl-srg/modelica-buildings/blob/4efb7ed6e0f307f339714a6b238e52922f193234/Buildings/Templates/HeatingPlants/HotWater/Validation/BoilerPlant.mo) in branch `issue3266_template_HW_plant`, using Dymola's feature "Show Component".
 
-![schmatic](/img/HWPlant.png)
+![schematic](/img/HWPlant.png)
 
 ### Component Icons
 
@@ -572,11 +583,18 @@ yields the following UI objects:
 
 #### `__ctrlFlow(enable=true|false)`
 
-Each declaration or `extends` statement may have a hierarchical annotation `"__ctrlFlow" "(" "enable" "=" logical-expression ")"` that allows disabling input fields in the ctrl-flow configuration dialog. This is similar to the Modelica annotation `Dialog(enable=true|false)` but provides additional flexibility and allows disabling all parameter input fields that are brought in by an `extends` statement.
+Each declaration, short class definition, or `extends` statement may have a hierarchical annotation `"__ctrlFlow" "(" "enable" "=" logical-expression ")"`.
+The class instantiated (or aliased, or extended) with this annotation is ***not parsed at all*** by ctrl-flow — no ancestors, no elements. As a result, none of its parameters are included in ctrl-flow configuration dialogs.
 
-It takes precedence over the standard annotation `Dialog(enable)`.
+:::danger Important
 
-Typical use cases include classes from the Modelica Buildings Library that contain definitions of detailed simulation parameters and that are extended to define template components, or package classes used to specify the fluid properties.
+Library-side contract: `__ctrlFlow(enable=false)` ***shall not*** be used on declarations whose parameters are referenced in expressions ctrl-flow must evaluate (enable annotations, configuration bindings).
+
+:::
+
+This annotation takes precedence over the standard annotation `Dialog.enable`.
+
+Typical use cases are large classes not intended to be interacted with in ctrl-flow — for example, fluid Medium packages — or detailed simulation parameters brought in by `extends` statements.
 
 <details>
 
