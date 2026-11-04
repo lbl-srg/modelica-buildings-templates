@@ -10,7 +10,11 @@ const config: Config = {
   favicon: "img/favicon.png",
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "throw",
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: "throw",
+    },
+  },
 
   // Set the production url of your site here
   url: "https://lbl-srg.github.io",
@@ -66,10 +70,11 @@ const config: Config = {
 
   stylesheets: [
     {
-      href: "https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css",
+      // Keep in sync with the "katex" override in package.json
+      href: "https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.css",
       type: "text/css",
       integrity:
-        "sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM",
+        "sha384-WwGtaC6ywCHxA5cstpj/3+xIZvTez8dq2IcBQaXRkenHZ7FVVq1ZROtURwfbtTlG",
       crossorigin: "anonymous",
     },
   ],
