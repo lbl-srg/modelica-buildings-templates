@@ -34,7 +34,9 @@
     "typescript": "6.0.3"
   },
   "overrides": {
+    "deepmerge": "npm:clsx@2.1.1",
     "katex": "0.19.1",
+    "minimatch": "11.0.3",
     "serialize-javascript": "7.1.4",
     "tinypool": "2.1.2",
     "uuid": "14.0.2"

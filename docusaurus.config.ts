@@ -41,6 +41,8 @@ const config: Config = {
     [
       require.resolve("docusaurus-lunr-search"),
       {
+        // Do not set includeRoutes or excludeRoutes: this plugin calls minimatch 3
+        // as a function, but package.json overrides it to 11, which crashes the build
         indexBaseUrl: true, // Because docs is served at the site's root, see routeBasePath
       },
     ],
